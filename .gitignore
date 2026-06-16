@@ -1,0 +1,29 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Go
+bin/
+coverage.out
+*.test
+
+# Repo-local Go caches used in this workspace
+.cache/
+.go/
+
+# Node / frontend
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Docker / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
