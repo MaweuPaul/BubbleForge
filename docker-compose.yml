@@ -52,7 +52,7 @@ services:
       REDIS_DB: "0"
       ENCRYPTION_KEY: change-me-to-a-32-byte-secret-key
     ports:
-      - "8080:8080"
+      - "8081:8080"
 
 volumes:
   postgres_data:

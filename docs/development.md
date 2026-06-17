@@ -6,7 +6,7 @@ BubbleForge uses Docker Compose for local infrastructure:
 
 - PostgreSQL on `localhost:5432`
 - Redis on `localhost:6379`
-- Backend API on `localhost:8080`
+- Backend API on `localhost:8081`
 
 Start everything:
 
@@ -32,7 +32,7 @@ go run ./cmd/api
 Health check:
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8081/health
 ```
 
 ## Notes
