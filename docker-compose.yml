@@ -51,6 +51,10 @@ services:
       REDIS_PASSWORD: ""
       REDIS_DB: "0"
       ENCRYPTION_KEY: change-me-to-a-32-byte-secret-key
+      JWT_SECRET: change-me-to-a-long-random-jwt-secret
+      JWT_ISSUER: bubbleforge-api
+      JWT_AUDIENCE: bubbleforge-app
+      ACCESS_TOKEN_TTL: 15m
     ports:
       - "8081:8080"
 
