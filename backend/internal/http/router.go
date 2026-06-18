@@ -27,20 +27,22 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173"},
+		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Authorization", "Content-Type"},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "Origin", "Accept"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
 
 	health := handlers.NewHealthHandler(deps.DB, deps.Redis)
+	components := handlers.NewComponentsHandler()
 
 	router.GET("/health", health.Check)
 
 	api := router.Group("/api/v1")
 	{
 		api.GET("/health", health.Check)
+		api.GET("/components", components.List)
 	}
 
 	return router

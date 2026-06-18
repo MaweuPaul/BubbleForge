@@ -1,32 +1,25 @@
 # BubbleForge
 
-AI-powered component platform for Bubble developers.
+Bubble Design System Platform.
 
-BubbleForge helps Bubble builders create better interfaces faster by combining a high-quality component library with AI-powered component generation and customization.
+BubbleForge helps Bubble builders create better interfaces faster by combining a high-quality component library, a design token system, and AI-powered customization.
 
-If a component already exists, users can browse, preview, and insert it into Bubble. If it does not exist, BubbleForge generates it with AI, validates it, saves it, and makes it reusable.
+We're not just building an AI component generator. We're building a complete design system platform.
 
-> If it exists, use it. If it does not, generate it.
+## BubbleForge Long-Term Vision
 
-## Vision
+Component Library
+↓
+Design System
+↓
+Component Composer
+↓
+Page Builder
+↓
+Application Builder
 
-BubbleForge is built for Bubble developers who want polished UI components without spending hours manually designing and rebuilding common interface patterns.
-
-The goal is to create a private, production-grade component system that can eventually support:
-
-- ready-made Bubble-compatible UI components
-- AI-generated components on demand
-- AI customization of existing components
-- reusable personal and team component libraries
-- Chrome extension-assisted Bubble insertion
-- bring-your-own-key AI provider support
-- backend-powered validation, caching, and versioning
-
-This project starts with one core technical question:
-
-Can BubbleForge reliably insert a prepared component into the Bubble editor?
-
-Once that is proven, the rest of the platform can grow around it.
+The goal is not merely generating components.
+The goal is enabling Bubble developers to build professional, fully branded applications using reusable, Bubble-native building blocks enhanced by AI.
 
 ## Product Concept
 
@@ -130,6 +123,122 @@ Possible approaches:
 - serialized component payloads
 
 Phase 0 is successful when BubbleForge can insert one simple component, such as a button, into Bubble reliably.
+
+## Bubble Structure Research
+
+Important discovery:
+
+Bubble appears to use internal serialized structures rather than relying entirely on native browser clipboard behavior.
+
+Research goals:
+
+- Component serialization
+- Copy/Paste mechanism
+- Local storage usage
+- Session storage usage
+- Internal editor events
+
+This research is critical to reliable component insertion.
+
+## Bubble Native Component Templates
+
+Every component should originate from real Bubble components.
+
+Process:
+
+Create component in Bubble
+↓
+Extract Bubble structure
+↓
+Convert into template
+↓
+Store template
+
+This ensures compatibility.
+
+## Future Product Modules
+
+### Brand Kit Engine
+
+Allow users to define their brand once and automatically apply it across all components.
+
+**Features:**
+- Primary Color
+- Secondary Color
+- Accent Color
+- Background Color
+- Text Colors
+- Border Radius
+- Font Family
+- Spacing Scale
+- Shadow Style
+
+**Example:**
+User enters:
+`Primary: #FF5A1F`, `Secondary: #0F172A`, `Font: Inter`, `Radius: 12px`
+
+Result:
+Buttons updated, Cards updated, Inputs updated, Modals updated, Tables updated. No manual styling required.
+
+### Design Tokens System
+
+Components should not store hardcoded styles. Instead they should reference design tokens.
+
+**Example:**
+`btn_primary`, `btn_secondary`, `card_default`, `input_default`, `modal_default`
+
+Tokens allow global updates across an entire application.
+
+### Component Variants
+
+Components should support versioning.
+
+**Example:**
+```text
+Stripe Button
+├── Dark
+├── Purple
+├── Icon
+├── Large
+└── Outline
+```
+This allows AI modifications without regenerating components from scratch.
+
+### AI Component Customization
+
+Instead of generating new components every time:
+`Find closest component` ↓ `Modify existing component` ↓ `Save as variant`
+
+**Example:**
+Make this button purple → Add icon → Use dark mode → Increase border radius
+
+### Component Composer
+
+Allow AI to build larger layouts using existing components.
+
+**Example:** Build a SaaS pricing page
+AI assembles: Navbar, Hero, Pricing Cards, Testimonials, FAQ, Footer (from existing library components).
+
+### Page Builder (Future)
+
+Allow generation of complete pages from existing components.
+
+**Example:** Create an admin dashboard
+AI assembles: Sidebar, Header, Stats Cards, Revenue Charts, Activity Table (using proven library components).
+
+### Smart Component Search
+
+When users search (e.g. "Stripe button"):
+The system should: Search Redis → Search Library → Find Similar Components → Return Best Match (before using AI).
+
+### AI Brand Generation (Future)
+
+User describes brand: `Modern fintech, Navy blue, Premium, Minimal`
+AI generates: Brand colors, Typography, Radius system, Shadow system, Spacing system (and applies them across the entire library).
+
+### Community Marketplace
+
+Allow users to: Publish Components, Share Components, Rate Components, Fork Components, Create Variants.
 
 ## Architecture
 

@@ -12,6 +12,7 @@ FROM alpine:3.22
 
 WORKDIR /app
 COPY --from=build /bubbleforge-api /usr/local/bin/bubbleforge-api
+COPY --from=build /app/data /app/data
 
 EXPOSE 8080
 CMD ["bubbleforge-api"]

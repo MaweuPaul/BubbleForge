@@ -1,0 +1,392 @@
+[
+  {
+    "id": "comp-button-solid",
+    "category": "Buttons",
+    "name": "Solid Button",
+    "description": "A bold, filled button that adopts your brand color.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 150,
+            "zindex": 2,
+            "order": 1,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "120px",
+            "single_height": true,
+            "min_height_css": "44px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 8,
+            "border_style": "none",
+            "bgcolor": "{{PRIMARY_COLOR}}",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Submit"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTSoB",
+          "default_name": "BF: Solid Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-outline",
+    "category": "Buttons",
+    "name": "Outline Button",
+    "description": "A ghost-bordered button with brand-colored text and border.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 150,
+            "zindex": 2,
+            "order": 2,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "120px",
+            "single_height": true,
+            "min_height_css": "44px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 8,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "{{PRIMARY_COLOR}}",
+            "bgcolor": "rgba(255,255,255,0)",
+            "font_color": "{{PRIMARY_COLOR}}",
+            "font_size": 14,
+            "font_bold": true,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Secondary"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTOuB",
+          "default_name": "BF: Outline Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-ghost",
+    "category": "Buttons",
+    "name": "Ghost Button",
+    "description": "A minimal, borderless text button with brand-colored text.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 150,
+            "zindex": 2,
+            "order": 3,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "80px",
+            "single_height": true,
+            "min_height_css": "44px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_style": "none",
+            "bgcolor": "rgba(255,255,255,0)",
+            "font_color": "{{PRIMARY_COLOR}}",
+            "font_size": 14,
+            "font_bold": true,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Cancel"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTGhB",
+          "default_name": "BF: Ghost Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-pill",
+    "category": "Buttons",
+    "name": "Pill Button",
+    "description": "A fully rounded pill-shaped button.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 150,
+            "zindex": 2,
+            "order": 4,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "120px",
+            "single_height": true,
+            "min_height_css": "44px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 999,
+            "border_style": "none",
+            "bgcolor": "{{PRIMARY_COLOR}}",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Pill Action"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTPiL",
+          "default_name": "BF: Pill Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-soft",
+    "category": "Buttons",
+    "name": "Soft Button",
+    "description": "Light tinted background with colored text. No border. Very popular in modern SaaS UI.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 150,
+            "zindex": 2,
+            "order": 5,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "120px",
+            "single_height": true,
+            "min_height_css": "44px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 8,
+            "border_style": "none",
+            "bgcolor": "{{SOFT_BG}}",
+            "font_color": "{{PRIMARY_COLOR}}",
+            "font_size": 14,
+            "font_bold": true,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Get Started"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTSoFt",
+          "default_name": "BF: Soft Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-destructive",
+    "category": "Buttons",
+    "name": "Destructive Button",
+    "description": "A bold red button for irreversible actions like delete or remove.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 150,
+            "zindex": 2,
+            "order": 6,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "120px",
+            "single_height": true,
+            "min_height_css": "44px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 8,
+            "border_style": "none",
+            "bgcolor": "#dc2626",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Delete"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTDeS",
+          "default_name": "BF: Destructive Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-icon",
+    "category": "Buttons",
+    "name": "Icon Button",
+    "description": "A square icon-only button using a Material Design icon. Great for toolbars.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 40,
+            "width": 40,
+            "zindex": 2,
+            "order": 7,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "40px",
+            "single_height": true,
+            "min_height_css": "40px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 8,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e2e8f0",
+            "bgcolor": "#ffffff",
+            "font_color": "#0f172a",
+            "font_size": 14,
+            "icon": "material outlined add",
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": ""
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTIcN",
+          "default_name": "BF: Icon Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-fab",
+    "category": "Buttons",
+    "name": "FAB Button",
+    "description": "Circular Floating Action Button. Perfect for primary actions like add or create.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 52,
+            "width": 52,
+            "zindex": 2,
+            "order": 8,
+            "fit_width": false,
+            "fit_height": false,
+            "single_width": true,
+            "min_width_css": "52px",
+            "single_height": true,
+            "min_height_css": "52px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 999,
+            "border_style": "none",
+            "bgcolor": "{{PRIMARY_COLOR}}",
+            "font_color": "#ffffff",
+            "font_size": 22,
+            "icon": "material outlined add",
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": ""
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTFaB",
+          "default_name": "BF: FAB Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    "id": "comp-button-link",
+    "category": "Buttons",
+    "name": "Link Button",
+    "description": "Looks like a hyperlink. Ideal for secondary navigation actions.",
+    "access": "Free",
+    "bubbleJson": {
+      "elements": [
+        {
+          "properties": {
+            "height": 36,
+            "width": 120,
+            "zindex": 2,
+            "order": 9,
+            "fit_width": true,
+            "fit_height": false,
+            "single_width": false,
+            "min_width_css": "60px",
+            "single_height": true,
+            "min_height_css": "36px",
+            "horiz_alignment": "center",
+            "collapse_when_hidden": true,
+            "border_roundness": 4,
+            "border_style": "none",
+            "bgcolor": "rgba(255,255,255,0)",
+            "font_color": "{{PRIMARY_COLOR}}",
+            "font_size": 14,
+            "font_bold": false,
+            "text": {
+              "type": "TextExpression",
+              "entries": {
+                "0": "Learn more →"
+              }
+            }
+          },
+          "type": "Button",
+          "id": "bTLnK",
+          "default_name": "BF: Link Button"
+        }
+      ],
+      "type": "copy"
+    }
+  }
+]

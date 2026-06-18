@@ -3,20 +3,28 @@
   "name": "BubbleForge Extension V0",
   "description": "Local prototype for testing Bubble component library clipboard insertion.",
   "version": "0.0.1",
-  "permissions": ["clipboardRead", "clipboardWrite"],
+  "permissions": ["clipboardRead", "clipboardWrite", "activeTab", "scripting"],
   "host_permissions": [
-    "https://bubble.io/page*",
-    "https://*.bubbleapps.io/*"
+    "https://bubble.io/*",
+    "https://*.bubbleapps.io/*",
+    "http://localhost:8081/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://bubble.io/page*",
+        "https://bubble.io/*",
         "https://*.bubbleapps.io/*"
       ],
       "css": ["styles.css"],
-      "js": ["sample-components.js", "content.js"],
-      "run_at": "document_idle"
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["drag-probe.js"],
+      "matches": ["https://bubble.io/*", "https://*.bubbleapps.io/*"]
     }
   ]
 }
