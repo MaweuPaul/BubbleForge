@@ -480,7 +480,7 @@
     const isExpanded = expandedCard === component.id;
     const pinned = isPinned(component.id);
     return `
-      <article class="bf-card ${isExpanded ? "is-expanded" : ""}" draggable="true" data-draggable-component-id="${escapeHtml(component.id)}">
+      <article class="bf-card ${isExpanded ? "is-expanded" : ""}" data-component-wrapper="${escapeHtml(component.id)}">
         <div class="bf-card-preview ${getPreviewClass(component)}" aria-hidden="true">
           ${renderPreview(component, c)}
         </div>
@@ -642,7 +642,7 @@
         const cust = getCustomization(comp);
         cust[prop] = prop === "radius" ? parseInt(e.target.value, 10) : e.target.value;
         // Live preview
-        const preview = root.querySelector(`[data-draggable-component-id="${compId}"] .bf-card-preview`);
+        const preview = root.querySelector(`[data-component-wrapper="${compId}"] .bf-card-preview`);
         if (preview) preview.innerHTML = renderPreview(comp, cust);
         if (prop === "radius") { const lbl = root.querySelector(`#bf-radius-${compId}`)?.closest(".bf-field")?.querySelector(".bf-field-value"); if (lbl) lbl.textContent = `${cust.radius}px`; }
         if (prop === "bgcolor") { const hex = root.querySelector(`#bf-bg-${compId}`)?.closest(".bf-color-field")?.querySelector(".bf-color-field-hex"); if (hex) hex.textContent = cust.bgcolor.toUpperCase(); }
@@ -651,15 +651,7 @@
       }
     });
 
-    root.addEventListener("dragstart", (e) => {
-      const card = e.target.closest("[data-draggable-component-id]");
-      if (card) handleCardDragStart(card, e.dataTransfer);
-    });
-
-    root.addEventListener("dragend", (e) => {
-      const card = e.target.closest("[data-draggable-component-id]");
-      if (card) handleCardDragEnd(card, e.clientX, e.clientY);
-    });
+    // Removed drag listeners
   }
 
   function updateMainOnly() {
@@ -691,43 +683,20 @@
     try {
       const c = getCustomization(component);
 
-      // Deep clone then apply template replacements via string substitution.
-      // We ONLY replace {{PRIMARY_COLOR}}, {{TEXT_COLOR}}, {{LABEL}}, {{RADIUS}}
-      // tokens — never blindly overwrite all bgcolor/font_color values.
-      // This preserves intentional transparent backgrounds on Outline/Ghost buttons.
-      let jsonStr = JSON.stringify(component.bubbleJson)
-        .replace(/{{PRIMARY_COLOR}}/g, c.bgcolor)
-        .replace(/{{TEXT_COLOR}}/g,    c.fgcolor)
-        .replace(/{{LABEL}}/g,         c.label)
-        .replace(/{{RADIUS}}/g,        String(c.radius))
-        .replace(/{{SOFT_BG}}/g,       getSoftBgColor(c.bgcolor));
+      const res = await fetch(`http://localhost:8081/api/v1/components/${component.id}/compile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_values: c })
+      });
 
-      // Apply border_roundness and label on every element (safe to always do)
-      const payload = JSON.parse(jsonStr);
-      if (payload.elements) {
-        payload.elements.forEach((el) => {
-          if (!el.properties) return;
-          // Radius — always apply
-          if (el.properties.border_roundness !== undefined)
-            el.properties.border_roundness = c.radius;
-          // Label — only override text if the element has a text field
-          if (el.properties.text?.entries)
-            el.properties.text.entries["0"] = c.label;
-          // Icon support
-          if (c.icon) {
-            el.properties.icon = "material outlined " + c.icon;
-            el.properties.button_type = c.label ? "label_icon" : "icon";
-          } else if (el.properties.button_type) {
-            // Remove icon if empty but it previously had one
-            delete el.properties.icon;
-            el.properties.button_type = "label";
-          }
-        });
+      if (!res.ok) {
+        throw new Error("Compilation failed: " + await res.text());
       }
 
+      const payload = await res.json();
       const ts = Date.now();
       const messageId = `${ts}x${Math.floor(Math.random() * 1e16)}`;
-      jsonStr = JSON.stringify(payload);
+      const jsonStr = JSON.stringify(payload);
 
       localStorage.setItem("bubble_element_clipboard", jsonStr);
       localStorage.setItem("bubble_element_clipboard_most_recent", jsonStr);
@@ -747,61 +716,7 @@
   }
 
 
-  /* ── Drag ───────────────────────────────────────── */
-  function handleCardDragStart(card, dataTransfer) {
-    const comp = components.find((c) => c.id === card.dataset.draggableComponentId);
-    if (!comp || !dataTransfer) return;
-    copyComponent(comp);
-    dataTransfer.effectAllowed = "copy";
-    dataTransfer.setData(DRAG_MIME, JSON.stringify(comp.bubbleJson));
-    dataTransfer.setData("text/plain", comp.name);
-    card.classList.add("is-dragging");
-    showDragOverlay(comp.name);
-  }
-
-  function handleCardDragEnd(card, clientX, clientY) {
-    card.classList.remove("is-dragging");
-    hideDragOverlay();
-
-    // Attempt to automatically trigger Bubble's paste handler at the drop position.
-    // 1. Try directly in the content script since it has clipboardRead permissions.
-    setTimeout(() => {
-      try {
-        const target = document.elementFromPoint(clientX, clientY) || document.body;
-        if (typeof target.focus === "function") target.focus();
-        document.execCommand("paste");
-      } catch (e) {}
-      
-      // 2. Send a message to the MAIN world function injected by drag-probe.js as a fallback
-      window.postMessage({ type: "BF_TRIGGER_PASTE", x: clientX, y: clientY }, "*");
-      console.info("[BubbleForge] Auto-paste trigger message sent to main world", clientX, clientY);
-    }, 80);
-  }
-
-
-  function handleDocumentDrop(event) {
-    if (!event.dataTransfer) return;
-    if (!Array.from(event.dataTransfer.types).includes(DRAG_MIME)) return;
-    console.info("[BubbleForge] Drop intercepted");
-  }
-
-  function showDragOverlay(name) {
-    const existing = document.getElementById("bf-drag-overlay");
-    if (existing) existing.remove();
-    const el = document.createElement("div");
-    el.id = "bf-drag-overlay";
-    el.style.cssText = `position:fixed;inset:0;z-index:2147483644;background:rgba(234,88,12,0.05);border:2px dashed rgba(234,88,12,0.35);pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;font-family:'Inter',ui-sans-serif,sans-serif;`;
-    el.innerHTML = `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 32px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,0.12)"><div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:6px">"${name}" is ready!</div><div style="font-size:12px;color:#64748b">Drop anywhere on the canvas to auto-paste</div></div>`;
-    document.body.appendChild(el);
-    requestAnimationFrame(() => { el.style.opacity = "1"; });
-  }
-
-  function hideDragOverlay() {
-    const el = document.getElementById("bf-drag-overlay");
-    if (!el) return;
-    el.style.opacity = "0";
-    setTimeout(() => el.remove(), 200);
-  }
+  // Drag code has been completely removed to prioritize copy-paste reliability
 
   /* ── Panel Helpers ──────────────────────────────── */
   function closePanel() {

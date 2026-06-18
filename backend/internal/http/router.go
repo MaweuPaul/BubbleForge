@@ -36,16 +36,23 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 
 	health := handlers.NewHealthHandler(deps.DB, deps.Redis)
 	components := handlers.NewComponentsHandler(deps.DB)
+	templates := handlers.NewTemplatesHandler(deps.DB)
 
 	router.GET("/health", health.Check)
 
 	api := router.Group("/api/v1")
 	{
 		api.GET("/health", health.Check)
+
 		api.GET("/components", components.List)
 		api.GET("/components/:id", components.GetByID)
 		api.POST("/components", components.Create)
 		api.PUT("/components/:id", components.Update)
+		api.POST("/components/:id/compile", components.Compile)
+
+		api.GET("/templates", templates.List)
+		api.GET("/templates/:id", templates.GetByID)
+		api.POST("/templates", templates.Create)
 	}
 
 	return router

@@ -1,9 +1,17 @@
+/* eslint-disable */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './ComponentForm.module.css';
 import { API_URL } from '@/lib/api';
+
+interface Template {
+  id: string;
+  name: string;
+  type: string;
+  property_schema?: Record<string, any>;
+}
 
 interface ComponentData {
   id?: string;
@@ -11,7 +19,9 @@ interface ComponentData {
   name: string;
   description: string;
   access: string;
-  bubbleJson?: any;
+  template_id?: string;
+  property_values?: Record<string, any>;
+  bubbleJson?: any; 
 }
 
 interface Props {
@@ -21,24 +31,98 @@ interface Props {
 
 const CATEGORIES = ['UI', 'Layout', 'Form', 'Marketing', 'Buttons', 'Cards', 'Navbars', 'Inputs', 'Modals', 'Tables'];
 
+function toColorInputValue(color: any) {
+  if (typeof color !== 'string') return '#ea580c';
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) return color.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+    const match = color.match(/#(.)(.)(.)/);
+    if (match) {
+      const [, r, g, b] = match;
+      return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+    }
+  }
+  return '#ea580c';
+}
+
 export default function ComponentForm({ initialData, isEdit }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [activeSchema, setActiveSchema] = useState<Record<string, any> | null>(null);
+
   const [formData, setFormData] = useState({
-    id:          initialData?.id          || '',
-    category:    initialData?.category    || 'UI',
-    name:        initialData?.name        || '',
-    description: initialData?.description || '',
-    access:      initialData?.access      || 'Free',
-    bubbleJson:  initialData?.bubbleJson
+    id:              initialData?.id              || '',
+    category:        initialData?.category        || 'UI',
+    name:            initialData?.name            || '',
+    description:     initialData?.description     || '',
+    access:          initialData?.access          || 'Free',
+    template_id:     initialData?.template_id     || '',
+    property_values: initialData?.property_values || {} as Record<string, any>,
+    bubbleJson:      initialData?.bubbleJson
       ? JSON.stringify(initialData.bubbleJson, null, 2)
-      : '{\n  \n}',
+      : '',
   });
+
+  // Fetch templates list on mount
+  useEffect(() => {
+    fetch(`${API_URL}/templates`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setTemplates(data);
+      })
+      .catch(err => console.error("Failed to load templates", err));
+  }, []);
+
+  // Fetch schema when template_id changes
+  useEffect(() => {
+    if (!formData.template_id) {
+      setActiveSchema(null);
+      return;
+    }
+    fetch(`${API_URL}/templates/${formData.template_id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.property_schema) {
+          setActiveSchema(data.property_schema);
+
+          // Initialize missing property values with defaults from schema
+          setFormData(prev => {
+            const nextVals = { ...prev.property_values };
+            let changed = false;
+            for (const [key, def] of Object.entries(data.property_schema)) {
+              const d = def as any;
+              if (nextVals[key] === undefined && d.default !== undefined) {
+                nextVals[key] = d.default;
+                changed = true;
+              }
+            }
+            if (changed) return { ...prev, property_values: nextVals };
+            return prev;
+          });
+        }
+      })
+      .catch(err => console.error("Failed to load schema", err));
+  }, [formData.template_id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handlePropChange = (key: string, value: any, type: string) => {
+    let parsedVal = value;
+    if (type === 'number') {
+      parsedVal = parseFloat(value);
+      if (isNaN(parsedVal)) parsedVal = 0;
+    }
+    setFormData(prev => ({
+      ...prev,
+      property_values: {
+        ...prev.property_values,
+        [key]: parsedVal
+      }
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,20 +131,24 @@ export default function ComponentForm({ initialData, isEdit }: Props) {
     setError('');
 
     try {
-      let parsedJson: unknown = {};
-      try {
-        parsedJson = JSON.parse(formData.bubbleJson);
-      } catch {
-        throw new Error('Bubble JSON is not valid — please check the syntax.');
+      let parsedJson: any = null;
+      if (!formData.template_id && formData.bubbleJson) {
+        try {
+          parsedJson = JSON.parse(formData.bubbleJson);
+        } catch {
+          throw new Error('Bubble JSON is not valid — please check the syntax.');
+        }
       }
 
       const payload = {
-        id:          formData.id,
-        category:    formData.category,
-        name:        formData.name,
-        description: formData.description,
-        access:      formData.access,
-        bubbleJson:  parsedJson,
+        id:              formData.id,
+        category:        formData.category,
+        name:            formData.name,
+        description:     formData.description,
+        access:          formData.access,
+        template_id:     formData.template_id || null,
+        property_values: formData.property_values,
+        bubbleJson:      parsedJson,
       };
 
       const url    = isEdit ? `${API_URL}/components/${formData.id}` : `${API_URL}/components`;
@@ -153,21 +241,103 @@ export default function ComponentForm({ initialData, isEdit }: Props) {
         </div>
       </div>
 
-      {/* Payload */}
+      {/* Architecture */}
       <div className={styles.section}>
-        <p className={styles.sectionTitle}>Bubble JSON Payload</p>
-        <div className={styles.formGroup} style={{ margin: 0 }}>
-          <textarea
-            id="bubbleJson" name="bubbleJson"
-            value={formData.bubbleJson} onChange={handleChange}
-            required rows={12}
-            className={styles.jsonEditor}
-            placeholder="{}"
-            spellCheck={false}
-          />
-          <span className={styles.hint}>Must be valid JSON. This is the serialized Bubble component definition.</span>
+        <p className={styles.sectionTitle}>Architecture</p>
+        <div className={styles.formGroup}>
+          <label htmlFor="template_id" className={styles.label}>Template (Compiler Base)</label>
+          <select id="template_id" name="template_id" value={formData.template_id} onChange={handleChange}>
+            <option value="">-- Legacy Raw JSON (No Template) --</option>
+            {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.type})</option>)}
+          </select>
         </div>
+
+        {!formData.template_id && (
+          <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
+            <label htmlFor="bubbleJson" className={styles.label}>Bubble JSON Payload (Legacy)</label>
+            <textarea
+              id="bubbleJson" name="bubbleJson"
+              value={formData.bubbleJson} onChange={handleChange}
+              rows={12}
+              className={styles.jsonEditor}
+              placeholder="{}"
+              spellCheck={false}
+            />
+            <span className={styles.hint}>Raw JSON for components that haven&apos;t been migrated to the template system yet.</span>
+          </div>
+        )}
       </div>
+
+      {/* Dynamic Properties */}
+      {formData.template_id && activeSchema && (
+        <div className={styles.section}>
+          <p className={styles.sectionTitle}>Template Properties</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {Object.entries(activeSchema).map(([key, schemaDef]) => {
+              const s = schemaDef as any;
+              const val = formData.property_values[key] ?? s.default ?? '';
+
+              return (
+                <div key={key} className={styles.formGroup} style={{ margin: 0 }}>
+                  <label htmlFor={`prop_${key}`} className={styles.label} style={{ textTransform: 'capitalize' }}>
+                    {key.replace(/_/g, ' ')}
+                  </label>
+                  
+                  {s.type === 'string' && (
+                    <input
+                      type="text" id={`prop_${key}`}
+                      value={val} onChange={(e) => handlePropChange(key, e.target.value, s.type)}
+                      placeholder={s.default}
+                    />
+                  )}
+                  
+                  {s.type === 'number' && (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="number" id={`prop_${key}`}
+                        value={val} onChange={(e) => handlePropChange(key, e.target.value, s.type)}
+                        style={{ width: '80px' }}
+                      />
+                      <input 
+                        type="range" min="0" max="1000" 
+                        value={val} onChange={(e) => handlePropChange(key, e.target.value, s.type)} 
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  )}
+                  
+                  {s.type === 'color' && (
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="color" id={`prop_${key}`}
+                        value={toColorInputValue(val)} 
+                        onChange={(e) => handlePropChange(key, e.target.value, s.type)}
+                        style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '4px' }}
+                      />
+                      <input
+                        type="text" value={val} 
+                        onChange={(e) => handlePropChange(key, e.target.value, 'string')}
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                  )}
+
+                  {s.type === 'select' && (
+                    <select
+                      id={`prop_${key}`} value={val}
+                      onChange={(e) => handlePropChange(key, e.target.value, s.type)}
+                    >
+                      {s.options?.map((opt: string) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className={styles.actions}>

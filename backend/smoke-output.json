@@ -1,0 +1,64 @@
+{
+  "elements": [
+    {
+      "default_name": "BF: Solid Button",
+      "id": "S8Qd1",
+      "properties": {
+        "bgcolor": "#ea580c",
+        "border_roundness": 8,
+        "border_style": "none",
+        "collapse_when_hidden": true,
+        "fit_height": true,
+        "fit_width": true,
+        "font_bold": true,
+        "font_color": "#ffffff",
+        "font_size": 14,
+        "height": 44,
+        "horiz_alignment": "center",
+        "min_height_css": "44px",
+        "min_width_css": "120px",
+        "order": 1,
+        "single_height": false,
+        "single_width": false,
+        "text": {
+          "entries": {
+            "0": "Submit"
+          },
+          "type": "TextExpression"
+        },
+        "width": 150,
+        "zindex": 2
+      },
+      "states": {
+        "0": {
+          "condition": {
+            "is_slidable": false,
+            "next": {
+              "args": {
+                "is_slidable": false,
+                "next": null,
+                "properties": {
+                  "breakpoint_id": "built-in-mobile-landing"
+                },
+                "type": "Breakpoint"
+              },
+              "is_slidable": false,
+              "name": "less_or_equal_than",
+              "type": "Message"
+            },
+            "properties": {
+              "name": "Current Page Width"
+            },
+            "type": "PageData"
+          },
+          "properties": {
+            "min_width_css": "100%"
+          },
+          "type": "State"
+        }
+      },
+      "type": "Button"
+    }
+  ],
+  "type": "copy"
+}
