@@ -1246,5 +1246,497 @@ window.BUBBLEFORGE_SAMPLE_COMPONENTS = [
       ],
       "type": "copy"
     }
+  },
+  {
+    id: "comp-common-top-navbar",
+    category: "Navigation",
+    name: "Top Navbar",
+    description: "A common SaaS navbar with brand, links, and primary action.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 72,
+            "width": 960,
+            "container_layout": "row",
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "padding_top": 16,
+            "padding_bottom": 16,
+            "padding_left": 24,
+            "padding_right": 24,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bNavG",
+          "default_name": "BF: Top Navbar"
+        },
+        {
+          "properties": {
+            "height": 28,
+            "width": 160,
+            "font_size": 20,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "BubbleForge" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bNavB",
+          "current_parent": "bNavG",
+          "default_name": "BF: Brand"
+        },
+        {
+          "properties": {
+            "height": 24,
+            "width": 320,
+            "font_size": 14,
+            "font_color": "#52525b",
+            "text": { "type": "TextExpression", "entries": { "0": "Components     Pricing     Docs" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bNavL",
+          "current_parent": "bNavG",
+          "default_name": "BF: Nav Links"
+        },
+        {
+          "properties": {
+            "height": 38,
+            "width": 118,
+            "bgcolor": "#18181b",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "border_roundness": 6,
+            "text": { "type": "TextExpression", "entries": { "0": "Get started" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bNavA",
+          "current_parent": "bNavG",
+          "default_name": "BF: Navbar Action"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-common-sidebar",
+    category: "Navigation",
+    name: "App Sidebar",
+    description: "A standard app sidebar with logo, navigation items, and account footer.",
+    access: "Pro",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 640,
+            "width": 260,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "padding_top": 20,
+            "padding_bottom": 20,
+            "padding_left": 14,
+            "padding_right": 14,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bSideG",
+          "default_name": "BF: App Sidebar"
+        },
+        {
+          "properties": {
+            "height": 32,
+            "width": 232,
+            "font_size": 18,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Workspace" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bSideB",
+          "current_parent": "bSideG",
+          "default_name": "BF: Sidebar Brand"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 232,
+            "bgcolor": "#f4f4f5",
+            "border_roundness": 6,
+            "font_size": 14,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Dashboard" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bSideA",
+          "current_parent": "bSideG",
+          "default_name": "BF: Sidebar Active Item"
+        },
+        {
+          "properties": {
+            "height": 132,
+            "width": 232,
+            "font_size": 14,
+            "font_color": "#52525b",
+            "line_spacing": 2.15,
+            "text": { "type": "TextExpression", "entries": { "0": "Components\nAI Generator\nBilling\nSettings" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bSideL",
+          "current_parent": "bSideG",
+          "default_name": "BF: Sidebar Links"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-common-tabs",
+    category: "Base components",
+    name: "Tabs",
+    description: "A common tab control with active state and three options.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 44,
+            "width": 420,
+            "container_layout": "row",
+            "bgcolor": "#f4f4f5",
+            "border_roundness": 8,
+            "padding_top": 4,
+            "padding_bottom": 4,
+            "padding_left": 4,
+            "padding_right": 4,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bTabsG",
+          "default_name": "BF: Tabs"
+        },
+        {
+          "properties": {
+            "height": 36,
+            "width": 136,
+            "bgcolor": "#ffffff",
+            "border_roundness": 6,
+            "boxshadow_style": "outset",
+            "boxshadow_color": "rgba(0,0,0,0.08)",
+            "boxshadow_blur_radius": 8,
+            "font_size": 14,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Overview" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTabsA",
+          "current_parent": "bTabsG",
+          "default_name": "BF: Active Tab"
+        },
+        {
+          "properties": {
+            "height": 36,
+            "width": 136,
+            "font_size": 14,
+            "font_color": "#71717a",
+            "text": { "type": "TextExpression", "entries": { "0": "Analytics" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTabsB",
+          "current_parent": "bTabsG",
+          "default_name": "BF: Tab"
+        },
+        {
+          "properties": {
+            "height": 36,
+            "width": 136,
+            "font_size": 14,
+            "font_color": "#71717a",
+            "text": { "type": "TextExpression", "entries": { "0": "Reports" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTabsC",
+          "current_parent": "bTabsG",
+          "default_name": "BF: Tab"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-common-modal",
+    category: "Modals",
+    name: "Confirmation Modal",
+    description: "A centered confirmation dialog with title, body copy, and two actions.",
+    access: "Pro",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 260,
+            "width": 440,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_roundness": 10,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "boxshadow_style": "outset",
+            "boxshadow_color": "rgba(0,0,0,0.16)",
+            "boxshadow_blur_radius": 34,
+            "boxshadow_vertical_offset": 18,
+            "padding_top": 26,
+            "padding_bottom": 26,
+            "padding_left": 26,
+            "padding_right": 26,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bModG",
+          "default_name": "BF: Confirmation Modal"
+        },
+        {
+          "properties": {
+            "height": 30,
+            "width": 388,
+            "font_size": 20,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Delete component?" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bModT",
+          "current_parent": "bModG",
+          "default_name": "BF: Modal Title"
+        },
+        {
+          "properties": {
+            "height": 64,
+            "width": 388,
+            "font_size": 14,
+            "font_color": "#71717a",
+            "line_spacing": 1.55,
+            "text": { "type": "TextExpression", "entries": { "0": "This action cannot be undone. The component will be removed from your library." } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bModD",
+          "current_parent": "bModG",
+          "default_name": "BF: Modal Description"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 112,
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#d4d4d8",
+            "border_roundness": 6,
+            "font_color": "#18181b",
+            "font_size": 14,
+            "font_bold": true,
+            "text": { "type": "TextExpression", "entries": { "0": "Cancel" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bModC",
+          "current_parent": "bModG",
+          "default_name": "BF: Modal Cancel"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 112,
+            "bgcolor": "#dc2626",
+            "border_roundness": 6,
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "text": { "type": "TextExpression", "entries": { "0": "Delete" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bModA",
+          "current_parent": "bModG",
+          "default_name": "BF: Modal Action"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-common-search-filter",
+    category: "Forms",
+    name: "Search And Filter Bar",
+    description: "A common table toolbar with search field, filter button, and export action.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 56,
+            "width": 720,
+            "container_layout": "row",
+            "bgcolor": "#ffffff",
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bFiltG",
+          "default_name": "BF: Search Filter Bar"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 360,
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#d4d4d8",
+            "border_roundness": 6,
+            "font_size": 14,
+            "font_color": "#71717a",
+            "text": { "type": "TextExpression", "entries": { "0": "Search records..." } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bFiltS",
+          "current_parent": "bFiltG",
+          "default_name": "BF: Search Input Placeholder"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 96,
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#d4d4d8",
+            "border_roundness": 6,
+            "font_color": "#18181b",
+            "font_size": 14,
+            "font_bold": true,
+            "text": { "type": "TextExpression", "entries": { "0": "Filter" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bFiltF",
+          "current_parent": "bFiltG",
+          "default_name": "BF: Filter Button"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 96,
+            "bgcolor": "#18181b",
+            "border_roundness": 6,
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "text": { "type": "TextExpression", "entries": { "0": "Export" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bFiltE",
+          "current_parent": "bFiltG",
+          "default_name": "BF: Export Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-common-pagination",
+    category: "Base components",
+    name: "Pagination",
+    description: "A common pagination control for tables and repeating groups.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 42,
+            "width": 360,
+            "container_layout": "row",
+            "bgcolor": "#ffffff",
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bPageG",
+          "default_name": "BF: Pagination"
+        },
+        {
+          "properties": {
+            "height": 38,
+            "width": 92,
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#d4d4d8",
+            "border_roundness": 6,
+            "font_color": "#18181b",
+            "font_size": 14,
+            "text": { "type": "TextExpression", "entries": { "0": "Previous" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bPageP",
+          "current_parent": "bPageG",
+          "default_name": "BF: Previous Button"
+        },
+        {
+          "properties": {
+            "height": 38,
+            "width": 120,
+            "font_size": 14,
+            "font_color": "#71717a",
+            "horiz_alignment": "center",
+            "text": { "type": "TextExpression", "entries": { "0": "Page 1 of 10" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bPageT",
+          "current_parent": "bPageG",
+          "default_name": "BF: Page Count"
+        },
+        {
+          "properties": {
+            "height": 38,
+            "width": 92,
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#d4d4d8",
+            "border_roundness": 6,
+            "font_color": "#18181b",
+            "font_size": 14,
+            "text": { "type": "TextExpression", "entries": { "0": "Next" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bPageN",
+          "current_parent": "bPageG",
+          "default_name": "BF: Next Button"
+        }
+      ],
+      "type": "copy"
+    }
   }
 ];
