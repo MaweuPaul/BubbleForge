@@ -59,10 +59,26 @@
         }));
       } catch (_) {}
 
+      // Try native execCommand
+      try {
+        if (typeof target.focus === "function") target.focus();
+        const success = document.execCommand("paste");
+        console.log("[BubbleForge Probe] execCommand('paste') returned", success);
+      } catch (e) {
+        console.warn("[BubbleForge Probe] execCommand failed", e);
+      }
+
       console.log("[BubbleForge Probe] Paste trigger fired at", x, y, "on", target.tagName);
     } catch (e) {
       console.warn("[BubbleForge Probe] Paste trigger failed:", e);
     }
   };
+
+  window.addEventListener("message", (e) => {
+    if (e.source !== window || !e.data) return;
+    if (e.data.type === "BF_TRIGGER_PASTE") {
+      window.__bubbleForgeTriggerPaste(e.data.x, e.data.y);
+    }
+  });
 
 })();

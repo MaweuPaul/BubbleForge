@@ -1,266 +1,445 @@
 # BubbleForge
 
-Bubble Design System Platform.
+AI-powered component platform for Bubble developers.
 
-BubbleForge helps Bubble builders create better interfaces faster by combining a high-quality component library, a design token system, and AI-powered customization.
+BubbleForge helps Bubble builders create better interfaces faster by combining a high-quality component library with AI-powered component generation and customization.
 
-We're not just building an AI component generator. We're building a complete design system platform.
+If a component already exists, users can browse, preview, and insert it into Bubble. If it does not exist, BubbleForge generates it with AI, validates it, saves it, and makes it reusable.
 
-## BubbleForge Long-Term Vision
+> If it exists, use it. If it does not, generate it.
 
-Component Library
-↓
-Design System
-↓
-Component Composer
-↓
-Page Builder
-↓
-Application Builder
+## Vision
 
-The goal is not merely generating components.
-The goal is enabling Bubble developers to build professional, fully branded applications using reusable, Bubble-native building blocks enhanced by AI.
+BubbleForge is built for Bubble developers who want polished UI components without spending hours manually designing and rebuilding common interface patterns.
 
-## Product Concept
+The goal is to create a private, production-grade component system that can eventually support:
 
-BubbleForge is similar in spirit to tools like Elemium, but with an AI-native workflow.
+- ready-made Bubble-compatible UI components
+- AI-generated components on demand
+- AI customization of existing components
+- reusable personal and team component libraries
+- Chrome extension-assisted Bubble insertion
+- bring-your-own-key AI provider support
+- backend-powered validation, caching, and versioning
 
-Traditional component libraries are limited by what already exists in the library.
+This project starts with one core technical question:
 
-BubbleForge should support both:
+Can BubbleForge reliably insert a prepared component into the Bubble editor?
 
-- using existing components instantly
-- generating missing components when needed
+Once that is proven, the rest of the platform can grow around it.
 
-Example prompts:
+---
 
-- Create a Stripe-inspired pricing button
-- Create a glassmorphism CTA button with hover animation
-- Create a clean SaaS dashboard card
-- Create a Linear-style sidebar item
-- Make this button darker and more rounded
-- Add an icon, loading state, and disabled state
+## Component Architecture: Atoms → Molecules → Pages
 
-Generated components should be saved into the user's library so they can be reused later.
+BubbleForge is built on an **Atomic Design System** — the same strategy used by Figma, Tailwind UI, and Radix.
 
-## Core Features
+Components are built from the smallest unit up. Each level can be assembled from the level below it.
 
-### Component Library
+### Level 1: Atoms
 
-Users should be able to:
+The smallest valid Bubble elements. Each must be independently pasteable into Bubble.
 
-- browse components
-- search components
-- filter by category
-- preview components
-- favorite components
-- save custom components
-- insert components into Bubble
-
-Initial component categories:
-
-- buttons
-- badges
-- inputs
-- cards
-- navbars
-- sidebars
-- pricing sections
-- forms
-- modals
-- tabs
-- tables
-- dashboard widgets
-
-### AI Component Generator
-
-When a component does not exist, the user should be able to generate one.
-
-The AI generator should produce:
-
-- component name
-- component description
-- HTML/CSS/JS or Bubble-compatible component definition
-- responsive behavior
-- variants
-- states such as hover, active, disabled, loading
-- customization options
-- preview metadata
-- insertion instructions or serialized insert payload
-
-Generated components must not be inserted blindly. They should pass validation first.
-
-### AI Component Editor
-
-Users should be able to select an existing component and ask AI to modify it.
-
-Example edits:
-
-- change colors
-- adjust border radius
-- add hover animation
-- add dark mode
-- add icon support
-- create a smaller variant
-- make it look more premium
-- match a brand style
-
-The editor should preserve the component's structure where possible instead of regenerating everything from scratch.
-
-### Bubble Insertion
-
-This is the most important technical milestone.
-
-BubbleForge must research and validate how components can be inserted into Bubble.
-
-Possible approaches:
-
-- clipboard-based paste format
-- Chrome extension-assisted insertion
-- Bubble editor DOM automation
-- reusable element import flow
-- custom Bubble plugin renderer
-- serialized component payloads
-
-Phase 0 is successful when BubbleForge can insert one simple component, such as a button, into Bubble reliably.
-
-## Bubble Structure Research
-
-Important discovery:
-
-Bubble appears to use internal serialized structures rather than relying entirely on native browser clipboard behavior.
-
-Research goals:
-
-- Component serialization
-- Copy/Paste mechanism
-- Local storage usage
-- Session storage usage
-- Internal editor events
-
-This research is critical to reliable component insertion.
-
-## Bubble Native Component Templates
-
-Every component should originate from real Bubble components.
-
-Process:
-
-Create component in Bubble
-↓
-Extract Bubble structure
-↓
-Convert into template
-↓
-Store template
-
-This ensures compatibility.
-
-## Future Product Modules
-
-### Brand Kit Engine
-
-Allow users to define their brand once and automatically apply it across all components.
-
-**Features:**
-- Primary Color
-- Secondary Color
-- Accent Color
-- Background Color
-- Text Colors
-- Border Radius
-- Font Family
-- Spacing Scale
-- Shadow Style
-
-**Example:**
-User enters:
-`Primary: #FF5A1F`, `Secondary: #0F172A`, `Font: Inter`, `Radius: 12px`
-
-Result:
-Buttons updated, Cards updated, Inputs updated, Modals updated, Tables updated. No manual styling required.
-
-### Design Tokens System
-
-Components should not store hardcoded styles. Instead they should reference design tokens.
-
-**Example:**
-`btn_primary`, `btn_secondary`, `card_default`, `input_default`, `modal_default`
-
-Tokens allow global updates across an entire application.
-
-### Component Variants
-
-Components should support versioning.
-
-**Example:**
-```text
-Stripe Button
-├── Dark
-├── Purple
-├── Icon
-├── Large
-└── Outline
 ```
-This allows AI modifications without regenerating components from scratch.
+Button
+Input
+Badge
+Icon
+Text block
+Divider
+Avatar
+Tag
+```
 
-### AI Component Customization
+### Level 2: Molecules
 
-Instead of generating new components every time:
-`Find closest component` ↓ `Modify existing component` ↓ `Save as variant`
+Composed of multiple atoms. Each molecule is a self-contained UI unit.
 
-**Example:**
-Make this button purple → Add icon → Use dark mode → Increase border radius
+```
+Search bar         (Input + Icon Button)
+Alert banner       (Icon + Text + Close Button)
+Stat card          (Text + Badge + Icon)
+Avatar with label  (Avatar + Text block)
+CTA row            (Text + Button + Outline Button)
+```
 
-### Component Composer
+### Level 3: Sections
 
-Allow AI to build larger layouts using existing components.
+Full UI sections composed of molecules and atoms.
 
-**Example:** Build a SaaS pricing page
-AI assembles: Navbar, Hero, Pricing Cards, Testimonials, FAQ, Footer (from existing library components).
+```
+Navbar
+Footer
+Pricing card
+Hero section
+Sidebar
+Dashboard panel
+Form group
+Feature list
+Testimonial block
+```
 
-### Page Builder (Future)
+### Level 4: Pages
 
-Allow generation of complete pages from existing components.
+Complete layouts assembled from sections.
 
-**Example:** Create an admin dashboard
-AI assembles: Sidebar, Header, Stats Cards, Revenue Charts, Activity Table (using proven library components).
+```
+Landing page
+Dashboard
+Settings page
+Checkout page
+Profile page
+```
 
-### Smart Component Search
+### Why This Strategy
 
-When users search (e.g. "Stripe button"):
-The system should: Search Redis → Search Library → Find Similar Components → Return Best Match (before using AI).
+Building atoms first gives BubbleForge a reusable foundation that AI can recombine safely.
 
-### AI Brand Generation (Future)
-
-User describes brand: `Modern fintech, Navy blue, Premium, Minimal`
-AI generates: Brand colors, Typography, Radius system, Shadow system, Spacing system (and applies them across the entire library).
-
-### Community Marketplace
-
-Allow users to: Publish Components, Share Components, Rate Components, Fork Components, Create Variants.
-
-## Architecture
-
-Recommended high-level architecture:
+Instead of asking AI to build a full footer from scratch (which risks invalid Bubble JSON), the system works like this:
 
 ```text
-Web App / Chrome Extension
-          |
-          v
-Go Backend API
-          |
-          +--------------------+
-          |                    |
-          v                    v
-     PostgreSQL              Redis
-          |                    |
-          v                    v
- Component Store        Cache / Job Queue
-          |
-          v
- AI Providers + Validation Workers
+Valid atom library
+       ↓
+AI selects relevant atoms
+       ↓
+Compiler assembles atoms with correct IDs and parent links
+       ↓
+Brand tokens applied
+       ↓
+Valid Bubble-native section generated
 ```
+
+This is significantly safer and more reliable than generating full structures from scratch.
+
+---
+
+## Bubble Properties Compiler
+
+The most important technical system in BubbleForge is the **Bubble Properties Compiler**.
+
+The Bubble Properties Compiler is a Go-based compilation layer that converts typed component properties into Bubble-compatible element JSON. Instead of treating every component as a static blob, BubbleForge stores reusable templates, property schemas, property values, and brand tokens, then compiles them into fresh Bubble clipboard payloads at copy time.
+
+A component is not a single JSON blob. It is a template combined with a set of typed properties that are injected at copy time.
+
+```text
+base_json template
+       +
+property_schema (what can be customized)
+       +
+property_values (user's choices)
+       +
+brand tokens
+       +
+fresh ID generation
+       =
+valid Bubble JSON
+```
+
+### Why Not Store One Giant JSON
+
+Storing one hardcoded JSON per component creates fragility:
+
+- Every color change requires editing raw JSON
+- AI cannot reliably edit unknown JSON structures
+- Two users who paste the same component share identical element IDs, causing silent Bubble conflicts
+- Conditionals reference internal IDs that break across apps
+
+The compiler solves all of these problems.
+
+### Tokenized Templates
+
+The base JSON template uses placeholder tokens instead of real values:
+
+```json
+{
+  "properties": {
+    "width": "{{WIDTH}}",
+    "height": "{{HEIGHT}}",
+    "bgcolor": "{{PRIMARY_COLOR}}",
+    "font_color": "{{TEXT_COLOR}}",
+    "border_roundness": "{{RADIUS}}",
+    "icon": "material outlined {{ICON}}",
+    "button_type": "{{BUTTON_TYPE}}"
+  }
+}
+```
+
+The compiler replaces tokens at copy time with the user's property values.
+
+### Element Targeting for Molecules
+
+For molecules with multiple nested elements, the compiler targets elements by their `default_name` field rather than array index:
+
+```text
+elements[0].properties.width  ← fragile when children exist
+```
+
+```text
+Find element where default_name = "BF_CTA_Button" ← safe
+```
+
+This means templates remain valid even when the structure changes.
+
+### ID Generation at Copy Time
+
+Every element in Bubble has a unique 5-character ID. When the compiler assembles a component, it:
+
+1. Generates a fresh random ID for every element
+2. Maps `current_parent` of children to the newly generated parent ID
+3. Strips unsafe internal fields: `said`, `state condition element_id`, internal breakpoint references
+
+IDs must be generated at **copy time**, not at save time. If IDs are generated once and stored, two users pasting the same component will have identical IDs on their canvases, causing Bubble conflicts.
+
+### Conditional Abstraction
+
+Bubble conditionals reference internal page element IDs:
+
+```json
+"condition": {
+  "type": "PageData",
+  "properties": { "element_id": "bTGYf" }
+}
+```
+
+This ID is the Bubble Page element — different in every app. The compiler translates human-readable conditions:
+
+```text
+page_width < mobile_breakpoint
+```
+
+into the correct Bubble conditional format, without hardcoding app-specific IDs.
+
+---
+
+## Database Design
+
+### component_types
+
+Defines what kind of component this is.
+
+```text
+id
+name           // Button, Card, Input, Footer
+slug           // button, card, input, footer
+description
+created_at
+```
+
+### component_templates
+
+Stores the base tokenized Bubble JSON for each component variant.
+
+```text
+id
+component_type_id
+name                    // "Primary Button", "Outline Button"
+slug
+base_json               // tokenized Bubble JSON (JSONB)
+property_schema         // what properties this template accepts (JSONB)
+preview_html            // rendered HTML preview
+status                  // draft | tested | published
+created_at
+updated_at
+```
+
+The `property_schema` field defines every customizable property:
+
+```json
+{
+  "label":       { "type": "string",  "default": "Click Me",   "token": "{{LABEL}}"        },
+  "width":       { "type": "number",  "default": 150,          "token": "{{WIDTH}}"         },
+  "height":      { "type": "number",  "default": 44,           "token": "{{HEIGHT}}"        },
+  "icon":        { "type": "string",  "default": "",           "token": "{{ICON}}"          },
+  "button_type": { "type": "select",  "default": "label",      "token": "{{BUTTON_TYPE}}",
+                   "options": ["label", "icon", "label_icon"]                               },
+  "radius":      { "type": "number",  "default": 8,            "token": "{{RADIUS}}"        },
+  "style":       { "type": "select",  "default": "Button_filled_light_primary_",
+                   "token": "{{STYLE}}",
+                   "options": ["Button_filled_light_primary_", "Button_outline_light_primary_"] }
+}
+```
+
+### components
+
+Actual library items that users see and copy.
+
+```text
+id
+template_id
+name
+category_id
+description
+tags                    // text[]
+property_values         // user-selected values (JSONB)
+is_public
+created_by
+access                  // free | pro
+created_at
+updated_at
+```
+
+The `property_values` field stores only the user's choices:
+
+```json
+{
+  "label": "Get Started",
+  "width": 180,
+  "height": 48,
+  "icon": "bolt",
+  "button_type": "label_icon",
+  "style": "Button_filled_light_primary_"
+}
+```
+
+### component_versions
+
+Git-style version history for every component.
+
+```text
+id
+component_id
+parent_version_id
+version_number
+property_values         // source of truth for this version (JSONB)
+compiled_json           // cached final Bubble JSON (JSONB)
+change_summary
+created_by
+created_at
+```
+
+Both `property_values` and `compiled_json` are stored:
+
+- `property_values` is the editable source
+- `compiled_json` is a cached snapshot for reference and rollback
+
+The live copy is always recompiled fresh at copy time.
+
+### categories
+
+```text
+id
+name
+slug
+order
+icon
+```
+
+### brand_tokens
+
+Per-user or per-team brand configuration.
+
+```text
+id
+user_id
+team_id
+primary_color
+secondary_color
+text_color
+background_color
+border_radius
+font_family
+custom_tokens          // additional arbitrary tokens (JSONB)
+created_at
+updated_at
+```
+
+### ai_keys
+
+Encrypted API keys for BYOK support.
+
+```text
+id
+user_id
+provider              // claude | openai | gemini | mistral | deepseek
+encrypted_key
+key_last_four
+is_active
+created_at
+updated_at
+```
+
+### generation_jobs
+
+Async AI generation job queue.
+
+```text
+id
+user_id
+prompt
+component_type_id
+status                // queued | running | done | failed
+result_component_id
+error_message
+created_at
+updated_at
+```
+
+### Full Table List
+
+```text
+users
+component_types
+component_templates
+components
+component_versions
+categories
+brand_tokens
+favorites
+ai_keys
+generation_jobs
+usage_events
+teams
+team_members
+audit_logs
+```
+
+---
+
+## Compiler Flow
+
+```text
+User clicks "Copy"
+       ↓
+Load component.property_values
+       ↓
+Load template.base_json
+       ↓
+Load template.property_schema
+       ↓
+Replace all {{TOKENS}} with property_values
+       ↓
+Apply brand tokens (primary_color, radius, etc.)
+       ↓
+Generate fresh random IDs for every element
+       ↓
+Map current_parent fields to new IDs
+       ↓
+Inject responsive conditionals (page width breakpoints)
+       ↓
+Strip unsafe fields (said, internal element_id refs)
+       ↓
+Write to localStorage bubble_element_clipboard
+       ↓
+User pastes with Ctrl+V into Bubble
+```
+
+---
+
+## What Not to Expose as Properties
+
+Some Bubble JSON fields must be managed by the compiler and never exposed as editable user properties:
+
+```text
+id                            // regenerated fresh per copy
+current_parent                // linked by compiler during assembly
+said                          // internal Bubble app fingerprint
+state condition element_id    // resolved by conditional abstraction layer
+breakpoint_id references      // mapped to current app's page element
+color_tokens                  // injected from brand_tokens
+font_tokens                   // injected from brand_tokens
+```
+
+---
 
 ## Tech Stack
 
@@ -276,82 +455,31 @@ Go Backend API
 - rate limiting
 - usage tracking
 
-Possible Go frameworks:
-
-- Gin
-- Fiber
-- Echo
-
 ### Frontend
 
 - Next.js
 - TypeScript
 - Tailwind CSS
 
-The web app should handle:
-
-- authentication UI
-- component browsing
-- previews
-- generation prompts
-- AI key management
-- account settings
-- admin review tools
-
 ### Chrome Extension
 
-The extension should eventually handle:
+The extension handles the full user workflow inside the Bubble editor:
 
-- login
-- component browsing inside Bubble
-- search
-- preview
-- copy/paste or insertion into Bubble
-- Bubble editor integration
+- component browsing
+- search and filter
+- live preview
+- customization panel
+- copy to Bubble clipboard
+- quick bar for pinned components
+- developer tools for clipboard inspection
 
-The extension should be treated as a core part of the product, not an afterthought.
-
-## Backend Design
-
-The backend should be designed for concurrent users from the beginning.
-
-Expensive work should not run directly inside API requests.
-
-Bad flow:
-
-```text
-Request -> Generate component -> Validate -> Save -> Return
-```
-
-Preferred flow:
-
-```text
-Request -> Create generation job -> Return job ID
-Worker -> Generate -> Validate -> Save -> Notify user
-```
-
-This allows the system to handle many users submitting generation requests at the same time.
-
-### Core Backend Responsibilities
-
-- user authentication integration
-- component CRUD
-- component versioning
-- favorites
-- generation jobs
-- AI provider routing
-- encrypted API key storage
-- prompt normalization
-- cache lookup
-- validation pipeline
-- usage events
-- admin review
+---
 
 ## Bring Your Own Key
 
-BubbleForge should support BYOK: Bring Your Own Key.
+BubbleForge supports BYOK: Bring Your Own Key.
 
-Users can add API keys for providers such as:
+Users can add API keys for:
 
 - Claude
 - OpenAI
@@ -359,226 +487,125 @@ Users can add API keys for providers such as:
 - Mistral
 - DeepSeek
 
-API keys must be treated as secrets.
+API keys must be treated as production secrets. They are encrypted before storage and decrypted only on the backend during provider calls. Raw keys are never returned to the frontend.
 
-Requirements:
-
-- never expose raw keys to the frontend after saving
-- encrypt keys before storing them
-- decrypt only on the backend during provider calls
-- show only masked keys in the UI
-- allow users to delete or replace keys
-- store key metadata such as provider and last four characters
-- use HTTPS in production
-- log usage events without logging secrets
-
-Passwords should be hashed.
-
-API keys should be encrypted because they need to be recovered later for provider requests.
-
-Example table:
-
-```text
-ai_keys
-- id
-- user_id
-- provider
-- encrypted_key
-- key_last_four
-- is_active
-- created_at
-- updated_at
-```
-
-## Suggested Database Tables
-
-```text
-users
-components
-component_versions
-categories
-favorites
-generation_jobs
-ai_keys
-usage_events
-teams
-team_members
-audit_logs
-```
-
-## Component Generation Flow
-
-```text
-User prompt
-    |
-    v
-Normalize prompt
-    |
-    v
-Check Redis cache
-    |
-    +--> Cache hit: return component
-    |
-    v
-Check PostgreSQL component store
-    |
-    +--> Found: cache and return component
-    |
-    v
-Create generation job
-    |
-    v
-Worker calls selected AI provider
-    |
-    v
-Validate generated component
-    |
-    v
-Render preview
-    |
-    v
-Save component/version
-    |
-    v
-Return result to user
-```
-
-## Validation Pipeline
-
-Generated components should be validated before users rely on them.
-
-Possible validation steps:
-
-- schema validation
-- HTML/CSS/JS safety checks
-- responsive preview rendering
-- screenshot generation
-- Bubble compatibility checks
-- extension insertion test
-- admin review for shared/public components
-
-Possible tooling:
-
-- Playwright
-- Chromium workers
-- isolated render sandbox
-- dedicated Bubble test app
+---
 
 ## Roadmap
 
-### Phase 0: Bubble Insertion Research
+### Phase 0: Bubble Insertion Research ✅
 
-Goal:
+Goal: Prove that BubbleForge can insert a prepared component into Bubble.
 
-Prove that BubbleForge can insert a prepared component into Bubble.
+Completed:
+- Studied Bubble editor paste behavior
+- Inspected clipboard payloads via Chrome extension Tools tab
+- Confirmed localStorage-based insertion works
+- Captured real Bubble JSON format for buttons
+- Confirmed layout properties, conditionals, and icon fields
+- Documented `said`, `current_parent`, and internal ID risks
 
-Tasks:
+Success metric achieved: A button can be inserted into Bubble reliably via the extension.
 
-- study Bubble editor paste behavior
-- inspect clipboard payloads
-- test simple component insertion
-- research how existing tools insert components
-- document findings
+---
 
-Success metric:
+### Phase 1: Component Library MVP ✅
 
-One simple button can be inserted into Bubble reliably.
+Goal: Build the basic component management platform.
 
-### Phase 1: Component Library MVP
+Completed:
+- Go + Gin + PostgreSQL + Redis backend running in Docker
+- Component CRUD API at `/api/v1/components`
+- 9 seeded button components with real Bubble JSON
+- Layout properties injected: `fit_width`, `single_width`, `min_width_css`
+- Responsive conditionals injected (page width < mobile breakpoint)
+- Icon field + `button_type` support added
+- Next.js admin dashboard with search and category filter
+- Component create/edit forms
 
-Goal:
+Success metric achieved: Components can be browsed, saved, and managed.
 
-Build the basic component management platform.
+---
 
-Tasks:
+### Phase 2: Chrome Extension MVP ✅
 
-- Go backend setup
-- PostgreSQL schema
-- component CRUD
-- categories
-- search
-- favorites
-- preview metadata
-- basic Next.js dashboard
+Goal: Bring BubbleForge into the Bubble editor workflow.
 
-Success metric:
+Completed:
+- Extension injects into bubble.io editor pages only
+- Sidebar panel with search, category filter, and previews
+- Customization panel: label, background, text color, radius, icon
+- Copy to Bubble writes correct localStorage clipboard keys
+- Pinned components and Quick Bar for fast access
+- Developer Tools tab for clipboard inspection
 
-Users can browse, save, and manage components.
+Success metric achieved: Users can access BubbleForge components while working inside Bubble.
 
-### Phase 2: Chrome Extension MVP
+---
 
-Goal:
+### Phase 3: Bubble Properties Compiler
 
-Bring BubbleForge into the Bubble editor workflow.
-
-Tasks:
-
-- extension authentication
-- component browser panel
-- search components
-- copy or insert component payloads
-- communicate with backend
-
-Success metric:
-
-Users can access BubbleForge components while working inside Bubble.
-
-### Phase 3: AI Generation
-
-Goal:
-
-Generate and customize components with AI.
+Goal: Replace raw JSON blobs with a typed template + compiler system.
 
 Tasks:
+- Migrate database to new schema (component_types, component_templates, components, component_versions)
+- Build tokenized base_json templates for all existing components
+- Write property_schema for each component type
+- Build Go compiler: token injection, ID generation, conditional abstraction
+- Update extension to compile at copy time
+- Update admin dashboard to show property_schema editor
+- Add brand_tokens support
 
-- BYOK support
-- encrypted API key storage
-- provider routing
-- generation job queue
-- component generation prompts
-- component editing prompts
-- save generated components
+Success metric: A component is stored as property_values and compiled into valid Bubble JSON at copy time with fresh IDs on every paste.
 
-Success metric:
+---
 
-Users can generate a missing component and save it to their library.
+### Phase 4: AI Generation
 
-### Phase 4: Automated Validation
-
-Goal:
-
-Make generated components safer and more reliable.
+Goal: Generate and customize components with AI.
 
 Tasks:
+- BYOK support: encrypted API key storage and provider routing
+- Redis-backed async generation job queue
+- AI prompt system for atom generation
+- AI prompt system for molecule assembly from atoms
+- Validation pipeline before saving generated components
+- Save generated components to library
 
-- schema validation
-- isolated render testing
-- screenshot previews
+Success metric: Users can generate a missing component from a text prompt and save it to their library.
+
+---
+
+### Phase 5: Automated Validation
+
+Goal: Make generated components safer and more reliable.
+
+Tasks:
+- Schema validation against property_schema
+- Isolated HTML render testing
+- Screenshot preview generation
 - Bubble compatibility checks
-- version history
+- Version history and rollback
 
-Success metric:
+Success metric: Generated components are validated before users can paste them.
 
-Generated components are validated before being used.
+---
 
-### Phase 5: Community and Marketplace
+### Phase 6: Community and Marketplace
 
-Goal:
-
-Turn generated components into a growing ecosystem.
+Goal: Turn the component library into a growing ecosystem.
 
 Tasks:
+- Public and private components
+- Ratings and reviews
+- Download and usage counts
+- Trending components
+- Team libraries
+- Creator profiles
 
-- public/private components
-- ratings
-- downloads/usage counts
-- trending components
-- team libraries
-- creator profiles
+Success metric: The component library grows from user-created and AI-generated components.
 
-Success metric:
-
-The component library grows from user-created components.
+---
 
 ## Project Principles
 
@@ -591,16 +618,25 @@ The component library grows from user-created components.
 - Save generated components for reuse.
 - Prefer practical working demos over premature complexity.
 - Build the extension as a serious product surface.
+- Components are atoms first. Molecules and pages are assembled from atoms.
+- The compiler owns ID generation. Users never set internal Bubble IDs.
+- Property schemas are typed per component type, never universal.
+
+---
 
 ## Repository Status
 
-This project is in early research and planning.
+Phase 0, 1, and 2 are complete.
 
 Current priority:
 
 ```text
-Prove component insertion into Bubble.
+Build the Bubble Properties Compiler.
+Migrate to typed property schema database.
+Replace raw JSON blobs with template + property_values + compiler output.
 ```
+
+---
 
 ## License
 
@@ -609,3 +645,4 @@ No license is provided.
 All rights reserved.
 
 This is a private commercial/portfolio project. No permission is granted to copy, modify, redistribute, sublicense, or use the source code without explicit written permission from the owner.
+

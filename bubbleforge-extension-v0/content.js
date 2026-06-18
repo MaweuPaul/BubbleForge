@@ -133,16 +133,16 @@
 
   function getDefaultCustomization(component) {
     switch (component.name) {
-      case "Solid Button":        return { label: "Submit",       bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 8   };
-      case "Outline Button":      return { label: "Secondary",    bgcolor: "#ea580c",              fgcolor: "#ea580c", radius: 8   };
-      case "Ghost Button":        return { label: "Cancel",       bgcolor: "#ea580c",              fgcolor: "#ea580c", radius: 8   };
-      case "Pill Button":         return { label: "Pill Action",  bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 999 };
-      case "Soft Button":         return { label: "Get Started",  bgcolor: "rgba(234,88,12,0.12)",fgcolor: "#ea580c", radius: 8   };
-      case "Destructive Button":  return { label: "Delete",       bgcolor: "#dc2626",              fgcolor: "#ffffff", radius: 8   };
-      case "Icon Button":         return { label: "+",            bgcolor: "#ffffff",              fgcolor: "#0f172a", radius: 8   };
-      case "FAB Button":          return { label: "+",            bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 999 };
-      case "Link Button":         return { label: "Learn more →", bgcolor: "transparent",          fgcolor: "#ea580c", radius: 4   };
-      default:                    return { label: "Button",        bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 8   };
+      case "Solid Button":        return { label: "Submit",       bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 8,   icon: "" };
+      case "Outline Button":      return { label: "Secondary",    bgcolor: "#ea580c",              fgcolor: "#ea580c", radius: 8,   icon: "" };
+      case "Ghost Button":        return { label: "Cancel",       bgcolor: "#ea580c",              fgcolor: "#ea580c", radius: 8,   icon: "" };
+      case "Pill Button":         return { label: "Pill Action",  bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 999, icon: "" };
+      case "Soft Button":         return { label: "Get Started",  bgcolor: "rgba(234,88,12,0.12)",fgcolor: "#ea580c", radius: 8,   icon: "" };
+      case "Destructive Button":  return { label: "Delete",       bgcolor: "#dc2626",              fgcolor: "#ffffff", radius: 8,   icon: "" };
+      case "Icon Button":         return { label: "+",            bgcolor: "#ffffff",              fgcolor: "#0f172a", radius: 8,   icon: "add" };
+      case "FAB Button":          return { label: "+",            bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 999, icon: "add" };
+      case "Link Button":         return { label: "Learn more →", bgcolor: "transparent",          fgcolor: "#ea580c", radius: 4,   icon: "" };
+      default:                    return { label: "Button",        bgcolor: "#ea580c",              fgcolor: "#ffffff", radius: 8,   icon: "" };
     }
   }
 
@@ -187,13 +187,17 @@
     // Restore saved position
     try {
       const saved = JSON.parse(localStorage.getItem(lsKey) || "null");
-      if (saved) {
-        el.style.left   = saved.x + "px";
-        el.style.top    = saved.y + "px";
-        el.style.bottom = "auto";
-        el.style.right  = "auto";
+      if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+        // Clamp to current viewport so dragged-offscreen elements snap back
+        const clampedX = Math.max(0, Math.min(window.innerWidth  - (el.offsetWidth  || 100), saved.x));
+        const clampedY = Math.max(0, Math.min(window.innerHeight - (el.offsetHeight || 50),  saved.y));
+        el.style.left      = clampedX + "px";
+        el.style.top       = clampedY + "px";
+        el.style.right     = "auto";
+        el.style.bottom    = "auto";
         el.style.transform = "none";
       }
+      // If no saved position: leave CSS defaults (bottom/right) intact
     } catch (_) {}
 
     function onMouseMove(e) {
@@ -515,9 +519,15 @@
     const fgDisplay = c.fgcolor === "transparent" ? "Transparent" : c.fgcolor.startsWith("rgba") ? c.fgcolor : c.fgcolor.toUpperCase();
     return `
       <div class="bf-customize-panel">
-        <div class="bf-field">
-          <label class="bf-field-label" for="bf-label-${id}">Label</label>
-          <input class="bf-field-input" id="bf-label-${id}" type="text" value="${escapeHtml(c.label)}" data-prop="label" data-comp="${id}">
+        <div class="bf-field-row">
+          <div class="bf-field">
+            <label class="bf-field-label" for="bf-label-${id}">Label</label>
+            <input class="bf-field-input" id="bf-label-${id}" type="text" value="${escapeHtml(c.label)}" data-prop="label" data-comp="${id}">
+          </div>
+          <div class="bf-field">
+            <label class="bf-field-label" for="bf-icon-${id}">Icon (Material)</label>
+            <input class="bf-field-input" id="bf-icon-${id}" type="text" value="${escapeHtml(c.icon || '')}" data-prop="icon" data-comp="${id}" placeholder="e.g. star, home">
+          </div>
         </div>
         <div class="bf-field-row">
           <div class="bf-field">
@@ -703,6 +713,15 @@
           // Label — only override text if the element has a text field
           if (el.properties.text?.entries)
             el.properties.text.entries["0"] = c.label;
+          // Icon support
+          if (c.icon) {
+            el.properties.icon = "material outlined " + c.icon;
+            el.properties.button_type = c.label ? "label_icon" : "icon";
+          } else if (el.properties.button_type) {
+            // Remove icon if empty but it previously had one
+            delete el.properties.icon;
+            el.properties.button_type = "label";
+          }
         });
       }
 
@@ -745,17 +764,17 @@
     hideDragOverlay();
 
     // Attempt to automatically trigger Bubble's paste handler at the drop position.
-    // We call the MAIN world function injected by drag-probe.js, passing the
-    // cursor coordinates so Bubble pastes the element at the right location.
+    // 1. Try directly in the content script since it has clipboardRead permissions.
     setTimeout(() => {
       try {
-        if (typeof window.__bubbleForgeTriggerPaste === "function") {
-          window.__bubbleForgeTriggerPaste(clientX, clientY);
-          console.info("[BubbleForge] Auto-paste trigger fired at", clientX, clientY);
-        }
-      } catch (e) {
-        console.warn("[BubbleForge] Auto-paste trigger unavailable", e);
-      }
+        const target = document.elementFromPoint(clientX, clientY) || document.body;
+        if (typeof target.focus === "function") target.focus();
+        document.execCommand("paste");
+      } catch (e) {}
+      
+      // 2. Send a message to the MAIN world function injected by drag-probe.js as a fallback
+      window.postMessage({ type: "BF_TRIGGER_PASTE", x: clientX, y: clientY }, "*");
+      console.info("[BubbleForge] Auto-paste trigger message sent to main world", clientX, clientY);
     }, 80);
   }
 
@@ -772,7 +791,7 @@
     const el = document.createElement("div");
     el.id = "bf-drag-overlay";
     el.style.cssText = `position:fixed;inset:0;z-index:2147483644;background:rgba(234,88,12,0.05);border:2px dashed rgba(234,88,12,0.35);pointer-events:none;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;font-family:'Inter',ui-sans-serif,sans-serif;`;
-    el.innerHTML = `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 32px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,0.12)"><div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:6px">"${name}" is ready!</div><div style="font-size:12px;color:#64748b">Release on the canvas, then press <kbd style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">Ctrl+V</kbd></div></div>`;
+    el.innerHTML = `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 32px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,0.12)"><div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:6px">"${name}" is ready!</div><div style="font-size:12px;color:#64748b">Drop anywhere on the canvas to auto-paste</div></div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = "1"; });
   }

@@ -13,11 +13,11 @@
             "width": 150,
             "zindex": 2,
             "order": 1,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
             "min_width_css": "120px",
-            "single_height": true,
+            "single_height": false,
             "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
@@ -36,7 +36,35 @@
           },
           "type": "Button",
           "id": "bTSoB",
-          "default_name": "BF: Solid Button"
+          "default_name": "BF: Solid Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -56,11 +84,11 @@
             "width": 150,
             "zindex": 2,
             "order": 2,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
             "min_width_css": "120px",
-            "single_height": true,
+            "single_height": false,
             "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
@@ -81,7 +109,35 @@
           },
           "type": "Button",
           "id": "bTOuB",
-          "default_name": "BF: Outline Button"
+          "default_name": "BF: Outline Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -101,11 +157,11 @@
             "width": 150,
             "zindex": 2,
             "order": 3,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
-            "min_width_css": "80px",
-            "single_height": true,
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
+            "min_width_css": "120px",
+            "single_height": false,
             "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
@@ -123,7 +179,35 @@
           },
           "type": "Button",
           "id": "bTGhB",
-          "default_name": "BF: Ghost Button"
+          "default_name": "BF: Ghost Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -143,11 +227,11 @@
             "width": 150,
             "zindex": 2,
             "order": 4,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
             "min_width_css": "120px",
-            "single_height": true,
+            "single_height": false,
             "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
@@ -166,7 +250,35 @@
           },
           "type": "Button",
           "id": "bTPiL",
-          "default_name": "BF: Pill Button"
+          "default_name": "BF: Pill Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -186,11 +298,11 @@
             "width": 150,
             "zindex": 2,
             "order": 5,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
             "min_width_css": "120px",
-            "single_height": true,
+            "single_height": false,
             "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
@@ -209,7 +321,35 @@
           },
           "type": "Button",
           "id": "bTSoFt",
-          "default_name": "BF: Soft Button"
+          "default_name": "BF: Soft Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -229,11 +369,11 @@
             "width": 150,
             "zindex": 2,
             "order": 6,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
             "min_width_css": "120px",
-            "single_height": true,
+            "single_height": false,
             "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
@@ -252,7 +392,35 @@
           },
           "type": "Button",
           "id": "bTDeS",
-          "default_name": "BF: Destructive Button"
+          "default_name": "BF: Destructive Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -272,12 +440,12 @@
             "width": 40,
             "zindex": 2,
             "order": 7,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
-            "min_width_css": "40px",
-            "single_height": true,
-            "min_height_css": "40px",
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
+            "min_width_css": "120px",
+            "single_height": false,
+            "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
             "border_roundness": 8,
@@ -297,7 +465,35 @@
           },
           "type": "Button",
           "id": "bTIcN",
-          "default_name": "BF: Icon Button"
+          "default_name": "BF: Icon Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -317,12 +513,12 @@
             "width": 52,
             "zindex": 2,
             "order": 8,
-            "fit_width": false,
-            "fit_height": false,
-            "single_width": true,
-            "min_width_css": "52px",
-            "single_height": true,
-            "min_height_css": "52px",
+            "fit_width": true,
+            "fit_height": true,
+            "single_width": false,
+            "min_width_css": "120px",
+            "single_height": false,
+            "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
             "border_roundness": 999,
@@ -340,7 +536,35 @@
           },
           "type": "Button",
           "id": "bTFaB",
-          "default_name": "BF: FAB Button"
+          "default_name": "BF: FAB Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"
@@ -361,11 +585,11 @@
             "zindex": 2,
             "order": 9,
             "fit_width": true,
-            "fit_height": false,
+            "fit_height": true,
             "single_width": false,
-            "min_width_css": "60px",
-            "single_height": true,
-            "min_height_css": "36px",
+            "min_width_css": "120px",
+            "single_height": false,
+            "min_height_css": "44px",
             "horiz_alignment": "center",
             "collapse_when_hidden": true,
             "border_roundness": 4,
@@ -383,7 +607,35 @@
           },
           "type": "Button",
           "id": "bTLnK",
-          "default_name": "BF: Link Button"
+          "default_name": "BF: Link Button",
+          "states": {
+            "0": {
+              "type": "State",
+              "condition": {
+                "type": "PageData",
+                "properties": {
+                  "name": "Current Page Width"
+                },
+                "next": {
+                  "type": "Message",
+                  "name": "less_or_equal_than",
+                  "is_slidable": false,
+                  "args": {
+                    "type": "Breakpoint",
+                    "properties": {
+                      "breakpoint_id": "built-in-mobile-landing"
+                    },
+                    "next": null,
+                    "is_slidable": false
+                  }
+                },
+                "is_slidable": false
+              },
+              "properties": {
+                "min_width_css": "100%"
+              }
+            }
+          }
         }
       ],
       "type": "copy"

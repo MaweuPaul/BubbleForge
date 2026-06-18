@@ -2,10 +2,14 @@ package database
 
 import (
 	"context"
+	_ "embed"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+//go:embed schema.sql
+var schemaSQL string
 
 func NewPostgres(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(databaseURL)
@@ -25,6 +29,11 @@ func NewPostgres(ctx context.Context, databaseURL string) (*pgxpool.Pool, error)
 	}
 
 	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, err
+	}
+
+	if _, err := pool.Exec(ctx, schemaSQL); err != nil {
 		pool.Close()
 		return nil, err
 	}
