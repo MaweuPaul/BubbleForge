@@ -76,17 +76,12 @@ BubbleForge is not just a static component list anymore. The current repo contai
 
 ### Not Complete Yet
 
-- [x] Bubble Properties Compiler implementation
-- [x] `POST /api/v1/components/:id/compile` endpoint
-- [x] Fresh Bubble element ID generation at copy time
-- [x] Parent/child `current_parent` remapping
-- [x] Unsafe Bubble internal field stripping
-- [x] Tokenized component templates
-- [x] Typed component property schemas
-- [x] Brand token system
 - [ ] Component versioning
-- [ ] Bubble token behavior research
-- [ ] Bubble style import/install workflow
+- [ ] BubbleForge Styleset Importer
+- [ ] Style reset/cleanup workflow
+- [ ] Palette editor before styleset import
+- [ ] Style-backed compiler mode
+- [ ] Styleset-installed detection in the extension
 - [ ] Multi-element atom composition for AI-generated sections
 - [ ] Production auth flow
 - [ ] BYOK provider storage and encryption flow
@@ -403,40 +398,38 @@ token IDs
 
 ### Color Token Change Test
 
-- [ ] Copy a known working button payload.
-- [ ] Change a color token such as `Primary 50` from `rgba(30,109,246,1)` to `rgba(255,90,31,1)`.
-- [ ] Paste the changed payload into Bubble.
-- [ ] Check whether the button color changes.
-- [ ] Check whether Bubble accepts the payload without repair.
-- [ ] Check whether Bubble creates or updates app color variables.
-- [ ] Check whether Bubble ignores token changes and keeps the original app tokens.
+- [x] Copy a known working button payload.
+- [x] Change a color token such as `Primary 50` from `rgba(30,109,246,1)` to `rgba(255,90,31,1)`.
+- [x] Paste the changed payload into Bubble.
+- [x] Check whether the button color changes.
+- [x] Check whether Bubble accepts the payload without repair.
+- [x] Check whether Bubble creates or updates app color variables.
+- [x] Check whether Bubble ignores token changes and keeps the original app tokens.
 
 ### Style Reference Test
 
-- [ ] Change a style reference such as `Button_filled_light_primary_` to another real style name from the same Bubble app.
-- [ ] Paste the payload into Bubble.
-- [ ] Check whether the pasted button uses the new style.
-- [ ] Check whether missing style names are ignored, repaired, or rejected.
+- [x] Change a style reference such as `Button_filled_light_primary_` to another real style name from the same Bubble app.
+- [x] Paste the payload into Bubble.
+- [x] Check whether the pasted button uses the new style.
+- [x] Check whether missing style names are ignored, repaired, or rejected.
 
 ### Token ID Dependency Test
 
-- [ ] Inspect token IDs such as `bTGzw`, `bTGzx`, and `bTHAB`.
-- [ ] Test whether those IDs are app-specific.
-- [ ] Test whether Bubble matches tokens by ID, by name, or by both.
-- [ ] Paste a payload with a known token name but changed token ID.
-- [ ] Paste a payload with a known token ID but changed token name.
+- [x] Inspect token IDs such as `bTGzw`, `bTGzx`, and `bTHAB`.
+- [x] Test whether those IDs are app-specific.
+- [x] Test whether Bubble matches tokens by ID, by name, or by both.
+- [x] Paste a payload with a known token name but changed token ID.
+- [x] Paste a payload with a known token ID but changed token name.
 
 ### Font Token Test
 
-- [ ] Create a text element with a custom font or text style.
-- [ ] Copy it from Bubble.
-- [ ] Inspect when `font_tokens` is populated.
-- [ ] Check whether pasted font tokens create, map to, or ignore app fonts.
+- [x] Create a text element with a custom font or text style.
+- [x] Copy it from Bubble.
+- [x] Inspect when `font_tokens` is populated.
+- [x] Check whether pasted font tokens create, map to, or ignore app fonts.
 
 ### App Style Set Test
 
-- [ ] Create App A with a blue primary color.
-- [ ] Create App B with an orange primary color.
 - [ ] Copy a styled button from App A.
 - [ ] Paste it into App B.
 - [ ] Check whether it keeps App A colors.
@@ -444,34 +437,99 @@ token IDs
 - [ ] Check whether it creates missing tokens.
 - [ ] Check whether it breaks or loses style references.
 
-### Possible Outcomes
-
-Best case:
+### Official Research Outcome: Detached Properties Required
 
 ```text
-Tokens can be replaced safely.
-Brand kit -> rewrite color_tokens -> paste works.
+Tokens CANNOT be safely replaced or injected. 
+Bubble ignores foreign token payloads and strictly relies on its own internal app dictionaries.
+Token IDs are completely app-specific.
+Missing styles are gracefully ignored, causing components to render as default unstyled elements.
+Raw Google Font strings passed in `font_face` work flawlessly without token dictionaries.
 ```
 
-Medium case:
+**Architectural Decision:** BubbleForge needs two compile modes.
+
+Mode 1 is **Detached Properties**. This is the default no-setup mode. Components strip their `"style"` property and inject colors, typography, spacing, radius, and sizing directly into each element's `properties` block. This guarantees pasted components look correct even when the destination Bubble app has never installed BubbleForge styles.
+
+Mode 2 is **Styleset Mode**. This is the Elemium-style advanced workflow. The user imports a BubbleForge styleset into the Bubble app first, then components can reference BubbleForge-controlled styles, colors, fonts, and breakpoints inside that app.
 
 ```text
-Styles must already exist in the Bubble app.
-BubbleForge must first install or import a style set.
+compile_mode: "detached" | "styleset"
 ```
 
-Hard case:
+Detached mode is the reliable V0 path. Styleset mode is the next major research/build milestone.
+
+## BubbleForge Styleset Importer
+
+To match Elemium-level capability, BubbleForge needs an import workflow for a full app styleset.
+
+Target product flow:
 
 ```text
-Token IDs are app-specific.
-Compiler must map token names to each app's token IDs before paste.
+Tools tab
+  -> Import BubbleForge Styleset
+  -> Optional: clean unused default Bubble styles/colors/fonts/breakpoints
+  -> Edit palette before import
+  -> Import colors
+  -> Import font styles
+  -> Import button styles
+  -> Import card/input/form styles
+  -> Components can now compile in styleset mode
 ```
 
-The product question this research answers:
+The styleset should include:
+
+- gray palette for backgrounds, borders, text, icons, and surfaces
+- primary palette for brand actions
+- danger palette for destructive actions and errors
+- warning palette for warning states
+- success palette for success states
+- typography styles for headings, body, captions, labels, and buttons
+- button styles
+- input styles
+- card/container styles
+- modal styles
+- table/list styles
+- responsive breakpoint assumptions
+
+### Styleset Import Research Checklist
+
+- [ ] Discover where Bubble stores app colors.
+- [ ] Discover where Bubble stores reusable styles.
+- [ ] Discover where Bubble stores font settings and font tokens.
+- [ ] Discover where Bubble stores breakpoints.
+- [ ] Test whether styles can be imported through clipboard/localStorage.
+- [ ] Test whether styles require Bubble editor internal APIs.
+- [ ] Test whether existing styles can be reset or cleaned safely.
+- [ ] Test whether imported styles get stable names inside the target app.
+- [ ] Test whether imported styles get app-specific IDs that must be mapped.
+- [ ] Add an extension tool for detecting whether BubbleForge styles are installed.
+- [ ] Add an extension tool for importing or resetting BubbleForge styles.
+
+### Compiler Mode Decision
+
+Detached mode:
 
 ```text
-Can BubbleForge safely inject brand colors and styles,
-or must it first import a Bubble-compatible style set?
+Use direct properties.
+Works in any Bubble app.
+No styleset required.
+Best for instant copy/paste and generated one-off components.
+```
+
+Styleset mode:
+
+```text
+Use BubbleForge style references.
+Requires imported BubbleForge styleset.
+Best for large apps, consistent design systems, and Elemium-style workflows.
+```
+
+The practical rule:
+
+```text
+If styleset is not installed, compile detached.
+If styleset is installed, allow style-backed compile.
 ```
 
 ## Bubble Properties Compiler
@@ -501,7 +559,8 @@ The compiler matters because:
 - AI should not edit raw Bubble JSON directly
 - component IDs must be regenerated on every copy
 - user-facing customization should use typed properties
-- brand colors and radius should be token-driven
+- brand colors, fonts, spacing, and radius should compile into detached properties by default
+- style references should only be used when a BubbleForge styleset is installed
 - parent/child IDs must be remapped safely
 - unsafe fields must be stripped before paste
 
@@ -578,15 +637,18 @@ component_templates
 component_types
 component_versions
 brand_tokens
+style_sets
+style_set_tokens
 ```
 
-Current `components.bubble_json` should stay temporarily for backwards compatibility while the compiler is introduced.
+Raw `components.bubble_json` is deprecated after the compiler migration. The scalable source of truth is template JSON plus typed property values.
 
 Planned migration direction:
 
 ```text
 components.template_id          new compiler-backed template reference
 components.property_values      typed values used by compiler
+components.compile_mode         detached or styleset
 ```
 
 ## AI Roadmap
