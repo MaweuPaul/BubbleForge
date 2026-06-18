@@ -35,6 +35,58 @@ BubbleForge is not just a static component list anymore. The current repo contai
 - seeded Bubble-compatible button component payloads
 - backend seed command for loading `backend/data/components.json`
 
+## Build Checklist
+
+### Complete In This Repo
+
+- [x] Private BubbleForge repository created
+- [x] Go backend scaffolded with Gin
+- [x] PostgreSQL connection and schema setup
+- [x] Redis service added to Docker Compose for future queues/cache
+- [x] Docker Compose local environment created
+- [x] Backend health routes added
+- [x] Component CRUD API added
+- [x] Component seed command added
+- [x] Seeded component catalog stored in `backend/data/components.json`
+- [x] Next.js admin dashboard created
+- [x] Admin component list, create, and edit screens added
+- [x] Chrome Extension Manifest V3 prototype created
+- [x] Bubble editor sidebar injected by the extension
+- [x] Component search and category browsing added to the extension
+- [x] Pinned components and quick bar added to the extension
+- [x] Bubble localStorage clipboard writer added
+- [x] MAIN-world drag/paste probe added for Bubble editor research
+- [x] README updated to describe the current architecture
+
+### Proven By Testing Or Research
+
+- [x] Backend tests run successfully with `go test ./...`
+- [x] Frontend production build run successfully with `npm run build`
+- [x] Extension scripts pass syntax checks with `node --check`
+- [x] Bubble editor can read component payloads from localStorage clipboard keys
+- [x] Manual paste into Bubble is the practical insertion path for V0
+- [x] External drag/drop alone does not reliably insert Bubble elements
+- [x] Bubble-compatible payloads need fresh IDs before this becomes scalable
+- [x] Raw Bubble JSON works for a prototype but needs a compiler layer for production quality
+- [x] AI should sit on top of the compiler, not directly write arbitrary Bubble JSON
+
+### Not Complete Yet
+
+- [ ] Bubble Properties Compiler implementation
+- [ ] `POST /api/v1/components/:id/compile` endpoint
+- [ ] Fresh Bubble element ID generation at copy time
+- [ ] Parent/child `current_parent` remapping
+- [ ] Unsafe Bubble internal field stripping
+- [ ] Tokenized component templates
+- [ ] Typed component property schemas
+- [ ] Brand token system
+- [ ] Component versioning
+- [ ] Production auth flow
+- [ ] BYOK provider storage and encryption flow
+- [ ] AI component generation
+- [ ] Production CORS/security hardening
+- [ ] Hosted deployment
+
 Current insertion mechanism:
 
 ```text
