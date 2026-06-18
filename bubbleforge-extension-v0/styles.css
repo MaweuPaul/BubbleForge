@@ -301,6 +301,20 @@
   flex-direction: column;
   min-height: 292px;
   overflow: hidden;
+  cursor: grab;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+#bubbleforge-extension-v0-root .bf-card:hover {
+  border-color: #b6c8ff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+#bubbleforge-extension-v0-root .bf-card.is-dragging {
+  cursor: grabbing;
+  opacity: 0.62;
+  transform: scale(0.985);
+  border-color: #2563eb;
 }
 
 #bubbleforge-extension-v0-root .bf-card-top {
@@ -383,6 +397,18 @@
 #bubbleforge-extension-v0-root .bf-card-copy {
   flex: 1;
   padding: 14px;
+}
+
+#bubbleforge-extension-v0-root .bf-drag-hint {
+  margin: 0 14px 9px;
+  padding: 8px 10px;
+  border: 1px dashed #b6c8ff;
+  border-radius: 6px;
+  color: #2563eb;
+  background: #f5f8ff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 #bubbleforge-extension-v0-root .bf-card-copy h2,
@@ -501,6 +527,28 @@
   cursor: pointer;
 }
 
+.bf-drag-image {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  z-index: 2147483647;
+  max-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid #2563eb;
+  border-radius: 7px;
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+html.bubbleforge-dragging-component {
+  cursor: grabbing;
+}
+
 @media (max-width: 720px) {
   #bubbleforge-extension-v0-root {
     width: 100vw;
@@ -522,7 +570,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #bubbleforge-extension-v0-root .bf-toast {
+  #bubbleforge-extension-v0-root .bf-toast,
+  #bubbleforge-extension-v0-root .bf-card {
     transition: none;
   }
 }

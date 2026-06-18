@@ -2,7 +2,7 @@
 
 Local Chrome extension prototype for testing a Bubble component library sidebar.
 
-This version does not use a backend, AI, auth, database, payments, or drag and drop. The only goal is to validate component browsing, copying stored component data to the clipboard, and inspecting Bubble clipboard payloads later.
+This version does not use a backend, AI, auth, database, or payments. The goal is to validate component browsing, copying stored component data to the clipboard, experimental drag/drop payloads, and inspecting Bubble clipboard payloads later.
 
 ## Files
 
@@ -32,6 +32,20 @@ bubbleforge-extension-v0/
 5. Paste into the Bubble editor.
 
 The current copied payload is placeholder JSON. Real Bubble component JSON still needs to be captured.
+
+## Drag And Drop Experiment
+
+Component cards are draggable.
+
+Drag a card from the BubbleForge sidebar into the Bubble editor canvas. The extension attaches these data types to the drag event:
+
+- `application/x-bubbleforge-component`
+- `application/json`
+- `text/plain`
+
+The extension also logs attempted drops to Chrome DevTools.
+
+This does not guarantee Bubble will accept the drop yet. It is an experiment to learn whether Bubble editor drop targets read browser `DataTransfer` payloads.
 
 ## Clipboard Experiment
 
@@ -101,7 +115,7 @@ Each component uses this shape:
 
 - Real Bubble JSON has not been captured yet.
 - Copy/paste may need additional MIME types after Bubble clipboard research.
-- No drag and drop.
+- Drag and drop is experimental and may not insert into Bubble until the real Bubble payload format is known.
 - No backend.
 - No AI generation.
 - No authentication.

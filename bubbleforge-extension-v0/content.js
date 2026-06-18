@@ -3,6 +3,7 @@
 
   const ROOT_ID = "bubbleforge-extension-v0-root";
   const REOPEN_ID = "bubbleforge-extension-v0-reopen";
+  const DRAG_MIME = "application/x-bubbleforge-component";
   const components = window.BUBBLEFORGE_SAMPLE_COMPONENTS || [];
 
   let activeTab = "Components";
@@ -16,6 +17,7 @@
 
   injectPanel();
   document.addEventListener("paste", handlePasteCapture, true);
+  document.addEventListener("drop", handleDocumentDrop, true);
 
   function injectPanel() {
     removeReopenButton();
@@ -116,7 +118,7 @@
       <div class="bf-main-head">
         <div>
           <h1>Components</h1>
-          <p>Copy placeholder Bubble component JSON, then test manual paste in the Bubble editor.</p>
+          <p>Copy or drag placeholder component JSON into the Bubble editor to test what Bubble accepts.</p>
         </div>
         <span class="bf-count">${filtered.length} shown</span>
       </div>
@@ -161,7 +163,7 @@
 
   function renderComponentCard(component) {
     return `
-      <article class="bf-card">
+      <article class="bf-card" draggable="true" data-draggable-component-id="${escapeHtml(component.id)}">
         <div class="bf-card-top">
           <span class="bf-badge">${escapeHtml(component.access || "Free")}</span>
           <span class="bf-category-pill">${escapeHtml(component.category)}</span>
@@ -173,6 +175,7 @@
           <h2>${escapeHtml(component.name)}</h2>
           <p>${escapeHtml(component.description)}</p>
         </div>
+        <div class="bf-drag-hint">Drag into Bubble editor</div>
         <button class="bf-copy-button" type="button" data-component-id="${escapeHtml(component.id)}">Copy Component</button>
       </article>
     `;
@@ -221,6 +224,11 @@
           copyComponent(component);
         }
       });
+    });
+
+    root.querySelectorAll("[data-draggable-component-id]").forEach((card) => {
+      card.addEventListener("dragstart", handleDragStart);
+      card.addEventListener("dragend", handleDragEnd);
     });
 
     const search = root.querySelector("#bf-search");
@@ -301,6 +309,78 @@
         showToast("Clipboard copy failed. Check browser permissions.");
       }
     }
+  }
+
+  function handleDragStart(event) {
+    const card = event.currentTarget;
+    const component = components.find((item) => item.id === card.dataset.draggableComponentId);
+    if (!component || !event.dataTransfer) {
+      return;
+    }
+
+    const json = JSON.stringify(component.bubbleJson, null, 2);
+    const payload = JSON.stringify(
+      {
+        source: "bubbleforge-extension-v0",
+        componentId: component.id,
+        componentName: component.name,
+        bubbleJson: component.bubbleJson
+      },
+      null,
+      2
+    );
+
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData(DRAG_MIME, payload);
+    event.dataTransfer.setData("application/json", json);
+    event.dataTransfer.setData("text/plain", json);
+
+    const dragImage = createDragImage(component);
+    document.documentElement.appendChild(dragImage);
+    event.dataTransfer.setDragImage(dragImage, 18, 18);
+    window.setTimeout(() => dragImage.remove(), 0);
+
+    card.classList.add("is-dragging");
+    document.documentElement.classList.add("bubbleforge-dragging-component");
+    showToast(`Dragging ${component.name}. Drop into Bubble editor.`);
+    console.info("[BubbleForge] Drag started", {
+      types: [DRAG_MIME, "application/json", "text/plain"],
+      component
+    });
+  }
+
+  function handleDragEnd(event) {
+    event.currentTarget.classList.remove("is-dragging");
+    document.documentElement.classList.remove("bubbleforge-dragging-component");
+  }
+
+  function handleDocumentDrop(event) {
+    if (!event.dataTransfer) {
+      return;
+    }
+
+    const types = Array.from(event.dataTransfer.types || []);
+    if (!types.includes(DRAG_MIME) && !types.includes("application/json")) {
+      return;
+    }
+
+    const payload = {
+      types,
+      bubbleforge: event.dataTransfer.getData(DRAG_MIME) || null,
+      applicationJson: event.dataTransfer.getData("application/json") || null,
+      textPlain: event.dataTransfer.getData("text/plain") || null,
+      target: describeNode(event.target)
+    };
+
+    console.info("[BubbleForge] Drop payload", payload);
+    showToast("Drop attempted. Check DevTools for BubbleForge payload.");
+  }
+
+  function createDragImage(component) {
+    const dragImage = document.createElement("div");
+    dragImage.className = "bf-drag-image";
+    dragImage.textContent = component.name;
+    return dragImage;
   }
 
   async function handlePasteCapture(event) {
@@ -409,5 +489,24 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function describeNode(node) {
+    if (!node || !node.nodeType) {
+      return "unknown";
+    }
+
+    if (node === document) {
+      return "document";
+    }
+
+    const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!element) {
+      return node.nodeName;
+    }
+
+    const id = element.id ? `#${element.id}` : "";
+    const classes = element.className && typeof element.className === "string" ? `.${element.className.trim().replace(/\s+/g, ".")}` : "";
+    return `${element.tagName.toLowerCase()}${id}${classes}`;
   }
 })();
