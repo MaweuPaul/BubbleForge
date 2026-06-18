@@ -32,6 +32,8 @@ BubbleForge is not just a static component list anymore. The current repo contai
 - component pinning in extension localStorage
 - localStorage-based Bubble clipboard insertion
 - MAIN-world drag/paste probe script
+- Bubble Properties Compiler package
+- template-backed component compilation endpoint
 - seeded Bubble-compatible button component payloads
 - backend seed command for loading `backend/data/components.json`
 
@@ -69,18 +71,23 @@ BubbleForge is not just a static component list anymore. The current repo contai
 - [x] Bubble-compatible payloads need fresh IDs before this becomes scalable
 - [x] Raw Bubble JSON works for a prototype but needs a compiler layer for production quality
 - [x] AI should sit on top of the compiler, not directly write arbitrary Bubble JSON
+- [x] Compiler smoke output preserves numeric width and height values
+- [x] Extension copy path calls the backend compiler endpoint
 
 ### Not Complete Yet
 
-- [ ] Bubble Properties Compiler implementation
-- [ ] `POST /api/v1/components/:id/compile` endpoint
-- [ ] Fresh Bubble element ID generation at copy time
-- [ ] Parent/child `current_parent` remapping
-- [ ] Unsafe Bubble internal field stripping
-- [ ] Tokenized component templates
-- [ ] Typed component property schemas
-- [ ] Brand token system
+- [x] Bubble Properties Compiler implementation
+- [x] `POST /api/v1/components/:id/compile` endpoint
+- [x] Fresh Bubble element ID generation at copy time
+- [x] Parent/child `current_parent` remapping
+- [x] Unsafe Bubble internal field stripping
+- [x] Tokenized component templates
+- [x] Typed component property schemas
+- [x] Brand token system
 - [ ] Component versioning
+- [ ] Bubble token behavior research
+- [ ] Bubble style import/install workflow
+- [ ] Multi-element atom composition for AI-generated sections
 - [ ] Production auth flow
 - [ ] BYOK provider storage and encryption flow
 - [ ] AI component generation
@@ -194,21 +201,26 @@ GET  /api/v1/components
 GET  /api/v1/components/:id
 POST /api/v1/components
 PUT  /api/v1/components/:id
+POST /api/v1/components/:id/compile
+GET  /api/v1/templates
+GET  /api/v1/templates/:id
+POST /api/v1/templates
 ```
 
-Current component table:
+Current compiler-backed component tables:
 
 ```sql
-CREATE TABLE IF NOT EXISTS components (
-    id VARCHAR(255) PRIMARY KEY,
-    category VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    access VARCHAR(50) DEFAULT 'Free',
-    bubble_json JSONB NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS component_templates (
+  id                TEXT PRIMARY KEY,
+  component_type_id TEXT NOT NULL REFERENCES component_types(id),
+  name              TEXT NOT NULL,
+  slug              TEXT NOT NULL UNIQUE,
+  base_json         JSONB NOT NULL,
+  property_schema   JSONB NOT NULL DEFAULT '{}'
 );
+
+ALTER TABLE components ADD COLUMN IF NOT EXISTS template_id TEXT REFERENCES component_templates(id);
+ALTER TABLE components ADD COLUMN IF NOT EXISTS property_values JSONB NOT NULL DEFAULT '{}';
 ```
 
 Current component model:
@@ -220,9 +232,12 @@ Current component model:
   "name": "Solid Button",
   "description": "A bold filled button.",
   "access": "Free",
-  "bubbleJson": {
-    "elements": [],
-    "type": "copy"
+  "template_id": "tmpl_solid-button",
+  "property_values": {
+    "label": "Submit",
+    "width": 150,
+    "height": 44,
+    "radius": 8
   }
 }
 ```
@@ -372,11 +387,98 @@ The extension also writes session and global clipboard sync keys to better match
 
 `drag-probe.js` exists to inspect what Bubble does in the page's MAIN JavaScript world. It currently intercepts drag data and exposes a paste trigger helper for experiments.
 
+## Token Research Checklist
+
+Bubble tokens are now the next major unknown after insertion and compiler output.
+
+The research target is:
+
+```text
+color_tokens
+font_tokens
+style references
+Bubble app style sets
+token IDs
+```
+
+### Color Token Change Test
+
+- [ ] Copy a known working button payload.
+- [ ] Change a color token such as `Primary 50` from `rgba(30,109,246,1)` to `rgba(255,90,31,1)`.
+- [ ] Paste the changed payload into Bubble.
+- [ ] Check whether the button color changes.
+- [ ] Check whether Bubble accepts the payload without repair.
+- [ ] Check whether Bubble creates or updates app color variables.
+- [ ] Check whether Bubble ignores token changes and keeps the original app tokens.
+
+### Style Reference Test
+
+- [ ] Change a style reference such as `Button_filled_light_primary_` to another real style name from the same Bubble app.
+- [ ] Paste the payload into Bubble.
+- [ ] Check whether the pasted button uses the new style.
+- [ ] Check whether missing style names are ignored, repaired, or rejected.
+
+### Token ID Dependency Test
+
+- [ ] Inspect token IDs such as `bTGzw`, `bTGzx`, and `bTHAB`.
+- [ ] Test whether those IDs are app-specific.
+- [ ] Test whether Bubble matches tokens by ID, by name, or by both.
+- [ ] Paste a payload with a known token name but changed token ID.
+- [ ] Paste a payload with a known token ID but changed token name.
+
+### Font Token Test
+
+- [ ] Create a text element with a custom font or text style.
+- [ ] Copy it from Bubble.
+- [ ] Inspect when `font_tokens` is populated.
+- [ ] Check whether pasted font tokens create, map to, or ignore app fonts.
+
+### App Style Set Test
+
+- [ ] Create App A with a blue primary color.
+- [ ] Create App B with an orange primary color.
+- [ ] Copy a styled button from App A.
+- [ ] Paste it into App B.
+- [ ] Check whether it keeps App A colors.
+- [ ] Check whether it adapts to App B styles.
+- [ ] Check whether it creates missing tokens.
+- [ ] Check whether it breaks or loses style references.
+
+### Possible Outcomes
+
+Best case:
+
+```text
+Tokens can be replaced safely.
+Brand kit -> rewrite color_tokens -> paste works.
+```
+
+Medium case:
+
+```text
+Styles must already exist in the Bubble app.
+BubbleForge must first install or import a style set.
+```
+
+Hard case:
+
+```text
+Token IDs are app-specific.
+Compiler must map token names to each app's token IDs before paste.
+```
+
+The product question this research answers:
+
+```text
+Can BubbleForge safely inject brand colors and styles,
+or must it first import a Bubble-compatible style set?
+```
+
 ## Bubble Properties Compiler
 
-The next serious milestone is the Bubble Properties Compiler.
+The Bubble Properties Compiler is now implemented as the backend layer that turns templates and typed values into Bubble clipboard payloads.
 
-Right now components still store raw `bubble_json` blobs in PostgreSQL. That works for the prototype, but it does not scale.
+Earlier prototypes stored raw `bubble_json` blobs. The compiler-backed path is the scalable direction.
 
 The Bubble Properties Compiler will turn this:
 
@@ -403,13 +505,13 @@ The compiler matters because:
 - parent/child IDs must be remapped safely
 - unsafe fields must be stripped before paste
 
-Planned endpoint:
+Current endpoint:
 
 ```text
 POST /api/v1/components/:id/compile
 ```
 
-Planned compiler package:
+Current compiler package:
 
 ```text
 backend/internal/compiler/
@@ -420,7 +522,7 @@ backend/internal/compiler/
   conditionals.go
 ```
 
-Planned compiler flow:
+Current compiler flow:
 
 ```text
 Load component
@@ -483,7 +585,6 @@ Current `components.bubble_json` should stay temporarily for backwards compatibi
 Planned migration direction:
 
 ```text
-components.bubble_json          current raw payload
 components.template_id          new compiler-backed template reference
 components.property_values      typed values used by compiler
 ```
@@ -552,8 +653,6 @@ node --check bubbleforge-extension-v0\drag-probe.js
 
 ## Current Limitations
 
-- Components are still mostly raw Bubble JSON blobs.
-- The compiler is not implemented yet.
 - Real Bubble compatibility is based on observed editor behavior and may change if Bubble changes internals.
 - Drag/drop is experimental and not the primary insertion mechanism.
 - AI generation is not implemented yet.
