@@ -1,485 +1,475 @@
 # BubbleForge
 
-AI-powered component platform for Bubble developers.
+BubbleForge is a component platform for Bubble developers.
 
-BubbleForge helps Bubble builders create better interfaces faster by combining a high-quality component library with AI-powered component generation and customization.
+The current product is a working local prototype with three parts:
 
-If a component already exists, users can browse, preview, and insert it into Bubble. If it does not exist, BubbleForge generates it with AI, validates it, saves it, and makes it reusable.
+- a Go backend that stores Bubble-compatible components in PostgreSQL
+- a Next.js admin dashboard for browsing, creating, and editing components
+- a Chrome extension that runs inside the Bubble editor and injects component payloads into Bubble's local clipboard storage
 
-> If it exists, use it. If it does not, generate it.
+The long-term product is an AI-ready component system for Bubble: users browse components, customize them, generate missing components later with AI, and paste Bubble-native UI into the Bubble editor.
 
-## Vision
-
-BubbleForge is built for Bubble developers who want polished UI components without spending hours manually designing and rebuilding common interface patterns.
-
-The goal is to create a private, production-grade component system that can eventually support:
-
-- ready-made Bubble-compatible UI components
-- AI-generated components on demand
-- AI customization of existing components
-- reusable personal and team component libraries
-- Chrome extension-assisted Bubble insertion
-- bring-your-own-key AI provider support
-- backend-powered validation, caching, and versioning
-
-This project starts with one core technical question:
-
-Can BubbleForge reliably insert a prepared component into the Bubble editor?
-
-Once that is proven, the rest of the platform can grow around it.
-
----
-
-## Component Architecture: Atoms → Molecules → Pages
-
-BubbleForge is built on an **Atomic Design System** — the same strategy used by Figma, Tailwind UI, and Radix.
-
-Components are built from the smallest unit up. Each level can be assembled from the level below it.
-
-### Level 1: Atoms
-
-The smallest valid Bubble elements. Each must be independently pasteable into Bubble.
-
-```
-Button
-Input
-Badge
-Icon
-Text block
-Divider
-Avatar
-Tag
-```
-
-### Level 2: Molecules
-
-Composed of multiple atoms. Each molecule is a self-contained UI unit.
-
-```
-Search bar         (Input + Icon Button)
-Alert banner       (Icon + Text + Close Button)
-Stat card          (Text + Badge + Icon)
-Avatar with label  (Avatar + Text block)
-CTA row            (Text + Button + Outline Button)
-```
-
-### Level 3: Sections
-
-Full UI sections composed of molecules and atoms.
-
-```
-Navbar
-Footer
-Pricing card
-Hero section
-Sidebar
-Dashboard panel
-Form group
-Feature list
-Testimonial block
-```
-
-### Level 4: Pages
-
-Complete layouts assembled from sections.
-
-```
-Landing page
-Dashboard
-Settings page
-Checkout page
-Profile page
-```
-
-### Why This Strategy
-
-Building atoms first gives BubbleForge a reusable foundation that AI can recombine safely.
-
-Instead of asking AI to build a full footer from scratch (which risks invalid Bubble JSON), the system works like this:
+The core positioning is:
 
 ```text
-Valid atom library
-       ↓
-AI selects relevant atoms
-       ↓
-Compiler assembles atoms with correct IDs and parent links
-       ↓
-Brand tokens applied
-       ↓
-Valid Bubble-native section generated
+If it exists, use it.
+If it does not exist, generate it.
+If it is customized, compile it safely.
 ```
 
-This is significantly safer and more reliable than generating full structures from scratch.
+## Current Status
 
----
+BubbleForge is not just a static component list anymore. The current repo contains:
 
-## Bubble Properties Compiler
+- Go API with Gin
+- PostgreSQL component catalog
+- Redis service for future queues/cache
+- Docker Compose local environment
+- Next.js admin dashboard
+- Chrome Extension Manifest V3 prototype
+- Bubble editor sidebar and floating quick bar
+- component pinning in extension localStorage
+- localStorage-based Bubble clipboard insertion
+- MAIN-world drag/paste probe script
+- seeded Bubble-compatible button component payloads
+- backend seed command for loading `backend/data/components.json`
 
-The most important technical system in BubbleForge is the **Bubble Properties Compiler**.
-
-The Bubble Properties Compiler is a Go-based compilation layer that converts typed component properties into Bubble-compatible element JSON. Instead of treating every component as a static blob, BubbleForge stores reusable templates, property schemas, property values, and brand tokens, then compiles them into fresh Bubble clipboard payloads at copy time.
-
-A component is not a single JSON blob. It is a template combined with a set of typed properties that are injected at copy time.
+Current insertion mechanism:
 
 ```text
-base_json template
-       +
-property_schema (what can be customized)
-       +
-property_values (user's choices)
-       +
-brand tokens
-       +
-fresh ID generation
-       =
-valid Bubble JSON
+User clicks Copy in BubbleForge extension
+        |
+        v
+Extension prepares Bubble JSON
+        |
+        v
+Extension writes to Bubble localStorage clipboard keys
+        |
+        v
+User focuses Bubble canvas and presses Ctrl+V
+        |
+        v
+Bubble editor reads localStorage and creates the element
 ```
 
-### Why Not Store One Giant JSON
+The key localStorage keys are:
 
-Storing one hardcoded JSON per component creates fragility:
+```text
+bubble_element_clipboard
+bubble_element_clipboard_most_recent
+_this_session_clipboard_bubble_element_clipboard
+_this_session_clipboard_bubble_element_clipboard_most_recent
+global_clipboard_message_<timestamp>
+```
 
-- Every color change requires editing raw JSON
-- AI cannot reliably edit unknown JSON structures
-- Two users who paste the same component share identical element IDs, causing silent Bubble conflicts
-- Conditionals reference internal IDs that break across apps
+This is the current practical path. Native drag/drop alone is not enough because Bubble's editor uses React-controlled internal drag state and ignores normal external `DataTransfer` payloads.
 
-The compiler solves all of these problems.
+## What BubbleForge Is Building
 
-### Tokenized Templates
+BubbleForge is a Bubble-native component infrastructure project.
 
-The base JSON template uses placeholder tokens instead of real values:
+The goal is not to render external HTML widgets inside Bubble. The goal is to generate and paste Bubble-compatible element payloads so the result behaves like normal Bubble UI.
+
+That means the system needs to understand:
+
+- Bubble element JSON
+- Bubble element IDs
+- parent/child relationships through `current_parent`
+- layout properties such as `fit_width`, `single_width`, and `min_width_css`
+- responsive conditions
+- style references
+- icon and button fields
+- unsafe internal fields that should not be reused across apps
+
+## Architecture
+
+```text
+Chrome Extension
+        |
+        | fetch components / copy payloads
+        v
+Go Backend API
+        |
+        +--------------------+
+        |                    |
+        v                    v
+   PostgreSQL              Redis
+        |
+        v
+Component Catalog
+
+Next.js Admin Dashboard
+        |
+        | create/edit components
+        v
+Go Backend API
+```
+
+## Repository Layout
+
+```text
+backend/
+  cmd/api/                         Go API entrypoint
+  cmd/seed/                        Loads backend/data/components.json into PostgreSQL
+  data/components.json             Seed component catalog
+  internal/http/handlers/          HTTP handlers
+  internal/platform/database/      PostgreSQL connection and schema
+  internal/auth/                   Auth primitives
+
+frontend/
+  src/app/                         Next.js app routes
+  src/components/                  Admin UI components
+  src/lib/api.ts                   API base URL helper
+
+bubbleforge-extension-v0/
+  manifest.json                    Chrome MV3 manifest
+  content.js                       Bubble editor UI and insertion logic
+  drag-probe.js                    MAIN-world browser probe
+  styles.css                       Extension UI styles
+```
+
+## Backend
+
+The backend is a Go API.
+
+Current API routes:
+
+```text
+GET  /health
+GET  /api/v1/health
+GET  /api/v1/components
+GET  /api/v1/components/:id
+POST /api/v1/components
+PUT  /api/v1/components/:id
+```
+
+Current component table:
+
+```sql
+CREATE TABLE IF NOT EXISTS components (
+    id VARCHAR(255) PRIMARY KEY,
+    category VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    access VARCHAR(50) DEFAULT 'Free',
+    bubble_json JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Current component model:
 
 ```json
 {
-  "properties": {
-    "width": "{{WIDTH}}",
-    "height": "{{HEIGHT}}",
-    "bgcolor": "{{PRIMARY_COLOR}}",
-    "font_color": "{{TEXT_COLOR}}",
-    "border_roundness": "{{RADIUS}}",
-    "icon": "material outlined {{ICON}}",
-    "button_type": "{{BUTTON_TYPE}}"
+  "id": "comp-button-solid",
+  "category": "Buttons",
+  "name": "Solid Button",
+  "description": "A bold filled button.",
+  "access": "Free",
+  "bubbleJson": {
+    "elements": [],
+    "type": "copy"
   }
 }
 ```
 
-The compiler replaces tokens at copy time with the user's property values.
+### Backend Commands
 
-### Element Targeting for Molecules
+Run tests:
 
-For molecules with multiple nested elements, the compiler targets elements by their `default_name` field rather than array index:
-
-```text
-elements[0].properties.width  ← fragile when children exist
+```powershell
+cd backend
+go test ./...
 ```
 
-```text
-Find element where default_name = "BF_CTA_Button" ← safe
+Seed components:
+
+```powershell
+cd backend
+go run ./cmd/seed
 ```
 
-This means templates remain valid even when the structure changes.
+Run API locally without Docker:
 
-### ID Generation at Copy Time
+```powershell
+cd backend
+go run ./cmd/api
+```
 
-Every element in Bubble has a unique 5-character ID. When the compiler assembles a component, it:
+## Docker
 
-1. Generates a fresh random ID for every element
-2. Maps `current_parent` of children to the newly generated parent ID
-3. Strips unsafe internal fields: `said`, `state condition element_id`, internal breakpoint references
+Docker Compose starts:
 
-IDs must be generated at **copy time**, not at save time. If IDs are generated once and stored, two users pasting the same component will have identical IDs on their canvases, causing Bubble conflicts.
+- PostgreSQL on `localhost:5432`
+- Redis on `localhost:6379`
+- Backend API on `localhost:8081`
 
-### Conditional Abstraction
+Start services:
 
-Bubble conditionals reference internal page element IDs:
+```powershell
+docker compose up --build backend
+```
+
+Health check:
+
+```powershell
+Invoke-RestMethod http://localhost:8081/health
+```
+
+## Frontend Admin Dashboard
+
+The frontend is a Next.js app used as an admin dashboard for the component catalog.
+
+Current features:
+
+- component list
+- search/filter UI
+- create component page
+- edit component page
+- API integration with the Go backend
+
+Run locally:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Build:
+
+```powershell
+cd frontend
+npm run build
+```
+
+The frontend reads the API base from:
+
+```text
+NEXT_PUBLIC_API_URL
+```
+
+Default:
+
+```text
+http://localhost:8081
+```
+
+## Chrome Extension
+
+The extension is a local Manifest V3 prototype.
+
+Current features:
+
+- injects into Bubble editor pages
+- fetches components from `http://localhost:8081/api/v1/components`
+- shows a BubbleForge UI inside the editor
+- supports search and category navigation
+- supports pinned components and a quick bar
+- supports component customization for button-like payloads
+- writes Bubble JSON to Bubble localStorage clipboard keys
+- includes `drag-probe.js` as a MAIN-world probe
+
+Load locally:
+
+1. Open Chrome.
+2. Go to `chrome://extensions`.
+3. Enable Developer Mode.
+4. Click `Load unpacked`.
+5. Select:
+
+```text
+E:\BubbleForge\bubbleforge-extension-v0
+```
+
+Then open a Bubble editor URL:
+
+```text
+https://bubble.io/page...
+```
+
+or:
+
+```text
+https://bubble.io/builder...
+```
+
+The extension targets:
+
+```text
+https://bubble.io/*
+https://*.bubbleapps.io/*
+```
+
+## Bubble Editor Insertion Research
+
+The important discovery is that Bubble does not behave like a normal external drag/drop target.
+
+External `DataTransfer` payloads are not enough. Bubble's editor uses its own React/editor state and internal clipboard behavior.
+
+The practical insertion route is localStorage injection:
+
+```js
+localStorage.setItem("bubble_element_clipboard", json)
+localStorage.setItem("bubble_element_clipboard_most_recent", json)
+```
+
+The extension also writes session and global clipboard sync keys to better match Bubble's own copy behavior.
+
+`drag-probe.js` exists to inspect what Bubble does in the page's MAIN JavaScript world. It currently intercepts drag data and exposes a paste trigger helper for experiments.
+
+## Bubble Properties Compiler
+
+The next serious milestone is the Bubble Properties Compiler.
+
+Right now components still store raw `bubble_json` blobs in PostgreSQL. That works for the prototype, but it does not scale.
+
+The Bubble Properties Compiler will turn this:
+
+```text
+template JSON
++ typed property schema
++ component property values
++ brand tokens
++ fresh Bubble element IDs
+```
+
+into this:
+
+```text
+valid Bubble clipboard payload
+```
+
+The compiler matters because:
+
+- AI should not edit raw Bubble JSON directly
+- component IDs must be regenerated on every copy
+- user-facing customization should use typed properties
+- brand colors and radius should be token-driven
+- parent/child IDs must be remapped safely
+- unsafe fields must be stripped before paste
+
+Planned endpoint:
+
+```text
+POST /api/v1/components/:id/compile
+```
+
+Planned compiler package:
+
+```text
+backend/internal/compiler/
+  compiler.go
+  tokens.go
+  ids.go
+  strip.go
+  conditionals.go
+```
+
+Planned compiler flow:
+
+```text
+Load component
+        |
+        v
+Load template
+        |
+        v
+Merge schema defaults + component values + request overrides
+        |
+        v
+Replace typed tokens
+        |
+        v
+Generate fresh element IDs
+        |
+        v
+Remap current_parent links
+        |
+        v
+Strip unsafe Bubble internals
+        |
+        v
+Return final Bubble JSON
+```
+
+Important compiler constraint:
 
 ```json
-"condition": {
-  "type": "PageData",
-  "properties": { "element_id": "bTGYf" }
-}
+"width": 150
 ```
 
-This ID is the Bubble Page element — different in every app. The compiler translates human-readable conditions:
-
-```text
-page_width < mobile_breakpoint
-```
-
-into the correct Bubble conditional format, without hardcoding app-specific IDs.
-
----
-
-## Database Design
-
-### component_types
-
-Defines what kind of component this is.
-
-```text
-id
-name           // Button, Card, Input, Footer
-slug           // button, card, input, footer
-description
-created_at
-```
-
-### component_templates
-
-Stores the base tokenized Bubble JSON for each component variant.
-
-```text
-id
-component_type_id
-name                    // "Primary Button", "Outline Button"
-slug
-base_json               // tokenized Bubble JSON (JSONB)
-property_schema         // what properties this template accepts (JSONB)
-preview_html            // rendered HTML preview
-status                  // draft | tested | published
-created_at
-updated_at
-```
-
-The `property_schema` field defines every customizable property:
+must remain a number. It must not compile as:
 
 ```json
-{
-  "label":       { "type": "string",  "default": "Click Me",   "token": "{{LABEL}}"        },
-  "width":       { "type": "number",  "default": 150,          "token": "{{WIDTH}}"         },
-  "height":      { "type": "number",  "default": 44,           "token": "{{HEIGHT}}"        },
-  "icon":        { "type": "string",  "default": "",           "token": "{{ICON}}"          },
-  "button_type": { "type": "select",  "default": "label",      "token": "{{BUTTON_TYPE}}",
-                   "options": ["label", "icon", "label_icon"]                               },
-  "radius":      { "type": "number",  "default": 8,            "token": "{{RADIUS}}"        },
-  "style":       { "type": "select",  "default": "Button_filled_light_primary_",
-                   "token": "{{STYLE}}",
-                   "options": ["Button_filled_light_primary_", "Button_outline_light_primary_"] }
-}
+"width": "150"
 ```
 
-### components
+Token replacement must preserve JSON types.
 
-Actual library items that users see and copy.
+## Planned Database Evolution
+
+Current table:
 
 ```text
-id
-template_id
-name
-category_id
-description
-tags                    // text[]
-property_values         // user-selected values (JSONB)
-is_public
-created_by
-access                  // free | pro
-created_at
-updated_at
-```
-
-The `property_values` field stores only the user's choices:
-
-```json
-{
-  "label": "Get Started",
-  "width": 180,
-  "height": 48,
-  "icon": "bolt",
-  "button_type": "label_icon",
-  "style": "Button_filled_light_primary_"
-}
-```
-
-### component_versions
-
-Git-style version history for every component.
-
-```text
-id
-component_id
-parent_version_id
-version_number
-property_values         // source of truth for this version (JSONB)
-compiled_json           // cached final Bubble JSON (JSONB)
-change_summary
-created_by
-created_at
-```
-
-Both `property_values` and `compiled_json` are stored:
-
-- `property_values` is the editable source
-- `compiled_json` is a cached snapshot for reference and rollback
-
-The live copy is always recompiled fresh at copy time.
-
-### categories
-
-```text
-id
-name
-slug
-order
-icon
-```
-
-### brand_tokens
-
-Per-user or per-team brand configuration.
-
-```text
-id
-user_id
-team_id
-primary_color
-secondary_color
-text_color
-background_color
-border_radius
-font_family
-custom_tokens          // additional arbitrary tokens (JSONB)
-created_at
-updated_at
-```
-
-### ai_keys
-
-Encrypted API keys for BYOK support.
-
-```text
-id
-user_id
-provider              // claude | openai | gemini | mistral | deepseek
-encrypted_key
-key_last_four
-is_active
-created_at
-updated_at
-```
-
-### generation_jobs
-
-Async AI generation job queue.
-
-```text
-id
-user_id
-prompt
-component_type_id
-status                // queued | running | done | failed
-result_component_id
-error_message
-created_at
-updated_at
-```
-
-### Full Table List
-
-```text
-users
-component_types
-component_templates
 components
+```
+
+Near-term compiler tables:
+
+```text
+component_templates
+component_types
 component_versions
-categories
 brand_tokens
-favorites
-ai_keys
-generation_jobs
-usage_events
-teams
-team_members
-audit_logs
 ```
 
----
+Current `components.bubble_json` should stay temporarily for backwards compatibility while the compiler is introduced.
 
-## Compiler Flow
+Planned migration direction:
 
 ```text
-User clicks "Copy"
-       ↓
-Load component.property_values
-       ↓
-Load template.base_json
-       ↓
-Load template.property_schema
-       ↓
-Replace all {{TOKENS}} with property_values
-       ↓
-Apply brand tokens (primary_color, radius, etc.)
-       ↓
-Generate fresh random IDs for every element
-       ↓
-Map current_parent fields to new IDs
-       ↓
-Inject responsive conditionals (page width breakpoints)
-       ↓
-Strip unsafe fields (said, internal element_id refs)
-       ↓
-Write to localStorage bubble_element_clipboard
-       ↓
-User pastes with Ctrl+V into Bubble
+components.bubble_json          current raw payload
+components.template_id          new compiler-backed template reference
+components.property_values      typed values used by compiler
 ```
 
----
+## AI Roadmap
 
-## What Not to Expose as Properties
+AI is intentionally not the first system.
 
-Some Bubble JSON fields must be managed by the compiler and never exposed as editable user properties:
+The correct order is:
 
 ```text
-id                            // regenerated fresh per copy
-current_parent                // linked by compiler during assembly
-said                          // internal Bubble app fingerprint
-state condition element_id    // resolved by conditional abstraction layer
-breakpoint_id references      // mapped to current app's page element
-color_tokens                  // injected from brand_tokens
-font_tokens                   // injected from brand_tokens
+1. Prove Bubble insertion
+2. Build component catalog
+3. Build Bubble Properties Compiler
+4. Add AI generation on top of compiler
 ```
 
----
+When AI is added, it should generate or modify:
 
-## Tech Stack
+```text
+property_values
+template metadata
+component variants
+```
 
-### Backend
+It should not directly produce arbitrary Bubble JSON unless the output is validated and compiled.
 
-- Go
-- PostgreSQL
-- Redis
-- REST API initially
-- worker queue for generation jobs
-- structured logging
-- API key encryption
-- rate limiting
-- usage tracking
+## Auth And BYOK
 
-### Frontend
+The backend already has auth primitives:
 
-- Next.js
-- TypeScript
-- Tailwind CSS
+- bcrypt password hashing
+- HS256 JWT creation and validation
+- Gin auth middleware
 
-### Chrome Extension
+BYOK is planned but not wired into the product yet.
 
-The extension handles the full user workflow inside the Bubble editor:
-
-- component browsing
-- search and filter
-- live preview
-- customization panel
-- copy to Bubble clipboard
-- quick bar for pinned components
-- developer tools for clipboard inspection
-
----
-
-## Bring Your Own Key
-
-BubbleForge supports BYOK: Bring Your Own Key.
-
-Users can add API keys for:
+Planned providers:
 
 - Claude
 - OpenAI
@@ -487,156 +477,47 @@ Users can add API keys for:
 - Mistral
 - DeepSeek
 
-API keys must be treated as production secrets. They are encrypted before storage and decrypted only on the backend during provider calls. Raw keys are never returned to the frontend.
+API keys should be encrypted at rest and decrypted only server-side when calling providers.
 
----
+## Verification
 
-## Roadmap
+Current verification commands:
 
-### Phase 0: Bubble Insertion Research ✅
+```powershell
+cd backend
+go test ./...
+```
 
-Goal: Prove that BubbleForge can insert a prepared component into Bubble.
+```powershell
+cd frontend
+npm run build
+```
 
-Completed:
-- Studied Bubble editor paste behavior
-- Inspected clipboard payloads via Chrome extension Tools tab
-- Confirmed localStorage-based insertion works
-- Captured real Bubble JSON format for buttons
-- Confirmed layout properties, conditionals, and icon fields
-- Documented `said`, `current_parent`, and internal ID risks
+```powershell
+node --check bubbleforge-extension-v0\content.js
+node --check bubbleforge-extension-v0\drag-probe.js
+```
 
-Success metric achieved: A button can be inserted into Bubble reliably via the extension.
+## Current Limitations
 
----
-
-### Phase 1: Component Library MVP ✅
-
-Goal: Build the basic component management platform.
-
-Completed:
-- Go + Gin + PostgreSQL + Redis backend running in Docker
-- Component CRUD API at `/api/v1/components`
-- 9 seeded button components with real Bubble JSON
-- Layout properties injected: `fit_width`, `single_width`, `min_width_css`
-- Responsive conditionals injected (page width < mobile breakpoint)
-- Icon field + `button_type` support added
-- Next.js admin dashboard with search and category filter
-- Component create/edit forms
-
-Success metric achieved: Components can be browsed, saved, and managed.
-
----
-
-### Phase 2: Chrome Extension MVP ✅
-
-Goal: Bring BubbleForge into the Bubble editor workflow.
-
-Completed:
-- Extension injects into bubble.io editor pages only
-- Sidebar panel with search, category filter, and previews
-- Customization panel: label, background, text color, radius, icon
-- Copy to Bubble writes correct localStorage clipboard keys
-- Pinned components and Quick Bar for fast access
-- Developer Tools tab for clipboard inspection
-
-Success metric achieved: Users can access BubbleForge components while working inside Bubble.
-
----
-
-### Phase 3: Bubble Properties Compiler
-
-Goal: Replace raw JSON blobs with a typed template + compiler system.
-
-Tasks:
-- Migrate database to new schema (component_types, component_templates, components, component_versions)
-- Build tokenized base_json templates for all existing components
-- Write property_schema for each component type
-- Build Go compiler: token injection, ID generation, conditional abstraction
-- Update extension to compile at copy time
-- Update admin dashboard to show property_schema editor
-- Add brand_tokens support
-
-Success metric: A component is stored as property_values and compiled into valid Bubble JSON at copy time with fresh IDs on every paste.
-
----
-
-### Phase 4: AI Generation
-
-Goal: Generate and customize components with AI.
-
-Tasks:
-- BYOK support: encrypted API key storage and provider routing
-- Redis-backed async generation job queue
-- AI prompt system for atom generation
-- AI prompt system for molecule assembly from atoms
-- Validation pipeline before saving generated components
-- Save generated components to library
-
-Success metric: Users can generate a missing component from a text prompt and save it to their library.
-
----
-
-### Phase 5: Automated Validation
-
-Goal: Make generated components safer and more reliable.
-
-Tasks:
-- Schema validation against property_schema
-- Isolated HTML render testing
-- Screenshot preview generation
-- Bubble compatibility checks
-- Version history and rollback
-
-Success metric: Generated components are validated before users can paste them.
-
----
-
-### Phase 6: Community and Marketplace
-
-Goal: Turn the component library into a growing ecosystem.
-
-Tasks:
-- Public and private components
-- Ratings and reviews
-- Download and usage counts
-- Trending components
-- Team libraries
-- Creator profiles
-
-Success metric: The component library grows from user-created and AI-generated components.
-
----
+- Components are still mostly raw Bubble JSON blobs.
+- The compiler is not implemented yet.
+- Real Bubble compatibility is based on observed editor behavior and may change if Bubble changes internals.
+- Drag/drop is experimental and not the primary insertion mechanism.
+- AI generation is not implemented yet.
+- BYOK UI/storage is not implemented yet.
+- CORS is currently permissive for local development and must be tightened before production.
 
 ## Project Principles
 
 - Keep the repository private.
-- Validate Bubble insertion before building too much around it.
-- Design the backend for concurrent users from the beginning.
-- Use background jobs for AI generation and validation.
-- Treat API keys like production secrets.
-- Cache aggressively so the platform becomes faster over time.
-- Save generated components for reuse.
-- Prefer practical working demos over premature complexity.
-- Build the extension as a serious product surface.
-- Components are atoms first. Molecules and pages are assembled from atoms.
-- The compiler owns ID generation. Users never set internal Bubble IDs.
-- Property schemas are typed per component type, never universal.
-
----
-
-## Repository Status
-
-Phase 0, 1, and 2 are complete.
-
-Current priority:
-
-```text
-Build the Bubble Properties Compiler.
-Migrate to typed property schema database.
-Replace raw JSON blobs with template + property_values + compiler output.
-```
-
----
+- Prove every Bubble editor assumption through live paste tests.
+- Treat Bubble JSON as an internal compiler target, not a user-authored format.
+- Keep the extension thin; move compilation and validation into Go.
+- Generate fresh Bubble IDs at copy time.
+- Do not expose internal Bubble fields as user-facing settings.
+- Build atoms first, then molecules, then sections.
+- Add AI only after the compiler path is reliable.
 
 ## License
 
@@ -644,5 +525,4 @@ No license is provided.
 
 All rights reserved.
 
-This is a private commercial/portfolio project. No permission is granted to copy, modify, redistribute, sublicense, or use the source code without explicit written permission from the owner.
-
+This is a private commercial and portfolio project. No permission is granted to copy, modify, redistribute, sublicense, or use the source code without explicit written permission from the owner.
