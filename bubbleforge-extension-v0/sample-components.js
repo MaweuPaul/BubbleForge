@@ -775,5 +775,476 @@ window.BUBBLEFORGE_SAMPLE_COMPONENTS = [
       ],
       "type": "copy"
     }
+  },
+  {
+    id: "comp-shadcn-dashboard-header",
+    category: "Navigation",
+    name: "Dashboard Header",
+    description: "A shadcn-style app header with title, breadcrumb copy, and compact actions.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 88,
+            "width": 760,
+            "container_layout": "row",
+            "bgcolor": "#ffffff",
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "border_roundness": 8,
+            "padding_top": 18,
+            "padding_bottom": 18,
+            "padding_left": 22,
+            "padding_right": 22,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bHdrG",
+          "default_name": "BF: Dashboard Header"
+        },
+        {
+          "properties": {
+            "height": 28,
+            "width": 420,
+            "font_size": 22,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Components" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bHdrT",
+          "current_parent": "bHdrG",
+          "default_name": "BF: Header Title"
+        },
+        {
+          "properties": {
+            "height": 20,
+            "width": 420,
+            "font_size": 13,
+            "font_color": "#71717a",
+            "text": { "type": "TextExpression", "entries": { "0": "Library / Components / Buttons" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bHdrB",
+          "current_parent": "bHdrG",
+          "default_name": "BF: Breadcrumb"
+        },
+        {
+          "properties": {
+            "height": 38,
+            "width": 132,
+            "bgcolor": "#18181b",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "border_roundness": 6,
+            "text": { "type": "TextExpression", "entries": { "0": "New component" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bHdrA",
+          "current_parent": "bHdrG",
+          "default_name": "BF: Header Action"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-shadcn-empty-state",
+    category: "Cards",
+    name: "Empty State",
+    description: "A centered empty state with muted copy and a clear primary action.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 280,
+            "width": 520,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_roundness": 8,
+            "border_style": "dashed",
+            "border_width": 1,
+            "border_color": "#d4d4d8",
+            "padding_top": 40,
+            "padding_bottom": 40,
+            "padding_left": 40,
+            "padding_right": 40,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bEmpG",
+          "default_name": "BF: Empty State"
+        },
+        {
+          "properties": {
+            "height": 32,
+            "width": 440,
+            "font_size": 20,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "horiz_alignment": "center",
+            "text": { "type": "TextExpression", "entries": { "0": "No components yet" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bEmpT",
+          "current_parent": "bEmpG",
+          "default_name": "BF: Empty Title"
+        },
+        {
+          "properties": {
+            "height": 48,
+            "width": 440,
+            "font_size": 14,
+            "font_color": "#71717a",
+            "horiz_alignment": "center",
+            "line_spacing": 1.5,
+            "text": { "type": "TextExpression", "entries": { "0": "Generate your first component or import one from the shared library." } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bEmpD",
+          "current_parent": "bEmpG",
+          "default_name": "BF: Empty Description"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 156,
+            "bgcolor": "#18181b",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "border_roundness": 6,
+            "text": { "type": "TextExpression", "entries": { "0": "Create component" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bEmpB",
+          "current_parent": "bEmpG",
+          "default_name": "BF: Empty Action"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-shadcn-invoice-card",
+    category: "Cards",
+    name: "Invoice Card",
+    description: "A billing card with invoice metadata, total, status pill, and action button.",
+    access: "Pro",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 240,
+            "width": 420,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_roundness": 8,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "padding_top": 22,
+            "padding_bottom": 22,
+            "padding_left": 22,
+            "padding_right": 22,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bInvG",
+          "default_name": "BF: Invoice Card"
+        },
+        {
+          "properties": {
+            "height": 26,
+            "width": 260,
+            "font_size": 18,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Invoice #BF-1048" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bInvT",
+          "current_parent": "bInvG",
+          "default_name": "BF: Invoice Title"
+        },
+        {
+          "properties": {
+            "height": 24,
+            "width": 72,
+            "bgcolor": "#ecfdf5",
+            "border_roundness": 999,
+            "font_size": 12,
+            "font_bold": true,
+            "font_color": "#047857",
+            "text": { "type": "TextExpression", "entries": { "0": "Paid" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bInvP",
+          "current_parent": "bInvG",
+          "default_name": "BF: Invoice Status"
+        },
+        {
+          "properties": {
+            "height": 48,
+            "width": 376,
+            "font_size": 34,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "$1,248.00" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bInvV",
+          "current_parent": "bInvG",
+          "default_name": "BF: Invoice Amount"
+        },
+        {
+          "properties": {
+            "height": 40,
+            "width": 140,
+            "bgcolor": "#18181b",
+            "font_color": "#ffffff",
+            "font_size": 14,
+            "font_bold": true,
+            "border_roundness": 6,
+            "text": { "type": "TextExpression", "entries": { "0": "Download PDF" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Button",
+          "id": "bInvB",
+          "current_parent": "bInvG",
+          "default_name": "BF: Invoice Button"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-shadcn-team-list",
+    category: "Lists",
+    name: "Team List",
+    description: "A compact team member list with role metadata and status badges.",
+    access: "Pro",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 280,
+            "width": 520,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_roundness": 8,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "padding_top": 14,
+            "padding_bottom": 14,
+            "padding_left": 14,
+            "padding_right": 14,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bTeamG",
+          "default_name": "BF: Team List"
+        },
+        {
+          "properties": {
+            "height": 56,
+            "width": 492,
+            "font_size": 14,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Paul Maweu                 Owner        Active" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTeamR1",
+          "current_parent": "bTeamG",
+          "default_name": "BF: Team Row"
+        },
+        {
+          "properties": {
+            "height": 56,
+            "width": 492,
+            "font_size": 14,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Amina Otieno              Designer     Invited" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTeamR2",
+          "current_parent": "bTeamG",
+          "default_name": "BF: Team Row"
+        },
+        {
+          "properties": {
+            "height": 56,
+            "width": 492,
+            "font_size": 14,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Daniel Kim                Developer    Active" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTeamR3",
+          "current_parent": "bTeamG",
+          "default_name": "BF: Team Row"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-shadcn-activity-feed",
+    category: "Lists",
+    name: "Activity Feed",
+    description: "A timeline-style activity feed for dashboards and admin panels.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 320,
+            "width": 460,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_roundness": 8,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "padding_top": 20,
+            "padding_bottom": 20,
+            "padding_left": 20,
+            "padding_right": 20,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bActG",
+          "default_name": "BF: Activity Feed"
+        },
+        {
+          "properties": {
+            "height": 26,
+            "width": 420,
+            "font_size": 18,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Recent activity" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bActT",
+          "current_parent": "bActG",
+          "default_name": "BF: Activity Title"
+        },
+        {
+          "properties": {
+            "height": 62,
+            "width": 420,
+            "font_size": 14,
+            "font_color": "#18181b",
+            "line_spacing": 1.45,
+            "text": { "type": "TextExpression", "entries": { "0": "Component generated\n2 minutes ago" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bActR1",
+          "current_parent": "bActG",
+          "default_name": "BF: Activity Row"
+        },
+        {
+          "properties": {
+            "height": 62,
+            "width": 420,
+            "font_size": 14,
+            "font_color": "#18181b",
+            "line_spacing": 1.45,
+            "text": { "type": "TextExpression", "entries": { "0": "Library synced\n18 minutes ago" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bActR2",
+          "current_parent": "bActG",
+          "default_name": "BF: Activity Row"
+        }
+      ],
+      "type": "copy"
+    }
+  },
+  {
+    id: "comp-shadcn-toast",
+    category: "Base components",
+    name: "Toast Notification",
+    description: "A compact success toast with title, body, and subtle elevation.",
+    access: "Free",
+    bubbleJson: {
+      "elements": [
+        {
+          "properties": {
+            "height": 92,
+            "width": 360,
+            "container_layout": "column",
+            "bgcolor": "#ffffff",
+            "border_roundness": 8,
+            "border_style": "solid",
+            "border_width": 1,
+            "border_color": "#e4e4e7",
+            "boxshadow_style": "outset",
+            "boxshadow_color": "rgba(0,0,0,0.12)",
+            "boxshadow_blur_radius": 22,
+            "boxshadow_vertical_offset": 10,
+            "padding_top": 16,
+            "padding_bottom": 16,
+            "padding_left": 16,
+            "padding_right": 16,
+            "collapse_when_hidden": true
+          },
+          "type": "Group",
+          "id": "bTstG",
+          "default_name": "BF: Toast Notification"
+        },
+        {
+          "properties": {
+            "height": 22,
+            "width": 328,
+            "font_size": 14,
+            "font_bold": true,
+            "font_color": "#18181b",
+            "text": { "type": "TextExpression", "entries": { "0": "Component saved" } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTstT",
+          "current_parent": "bTstG",
+          "default_name": "BF: Toast Title"
+        },
+        {
+          "properties": {
+            "height": 22,
+            "width": 328,
+            "font_size": 13,
+            "font_color": "#71717a",
+            "text": { "type": "TextExpression", "entries": { "0": "Your component is now available in My Library." } },
+            "collapse_when_hidden": true
+          },
+          "type": "Text",
+          "id": "bTstD",
+          "current_parent": "bTstG",
+          "default_name": "BF: Toast Description"
+        }
+      ],
+      "type": "copy"
+    }
   }
 ];
