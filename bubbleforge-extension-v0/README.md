@@ -47,7 +47,7 @@ The extension also logs attempted drops to Chrome DevTools.
 
 This does not guarantee Bubble will accept the drop yet. It is an experiment to learn whether Bubble editor drop targets read browser `DataTransfer` payloads.
 
-When drag starts, BubbleForge also writes the component JSON to the clipboard. If dropping does nothing, click the Bubble editor canvas and press `Ctrl+V`.
+If dropping does nothing, use `Copy Component` instead. Chrome may block clipboard writes during drag events, so clipboard writes are intentionally limited to direct button clicks.
 
 ## Clipboard Experiment
 

@@ -119,7 +119,7 @@
       <div class="bf-main-head">
         <div>
           <h1>Components</h1>
-          <p>Copy or drag placeholder component JSON into the Bubble editor to test what Bubble accepts.</p>
+          <p>Use Copy Component for clipboard testing. Dragging only sends a browser drop payload for research.</p>
         </div>
         <span class="bf-count">${filtered.length} shown</span>
       </div>
@@ -187,7 +187,7 @@
           <h2>${escapeHtml(component.name)}</h2>
           <p>${escapeHtml(component.description)}</p>
         </div>
-        <div class="bf-drag-hint">Drag into Bubble editor</div>
+        <div class="bf-drag-hint">Experimental drag payload</div>
         <button class="bf-copy-button" type="button" data-component-id="${escapeHtml(component.id)}">Copy Component</button>
       </article>
     `;
@@ -352,16 +352,6 @@
     event.dataTransfer.setData(DRAG_MIME, payload);
     event.dataTransfer.setData("application/json", json);
     event.dataTransfer.setData("text/plain", json);
-    writeClipboardTypes({
-      "application/json": json,
-      "text/plain": json
-    })
-      .then(() => {
-        showToast(`Dragging ${component.name}. Clipboard also updated; if drop fails, press Ctrl+V.`);
-      })
-      .catch((error) => {
-        console.warn("[BubbleForge] Drag clipboard write failed", error);
-      });
 
     const dragImage = createDragImage(component);
     document.documentElement.appendChild(dragImage);
@@ -370,7 +360,7 @@
 
     card.classList.add("is-dragging");
     document.documentElement.classList.add("bubbleforge-dragging-component");
-    showToast(`Dragging ${component.name}. Drop into Bubble editor.`);
+    showToast(`Dragging ${component.name}. If Bubble ignores it, use Copy Component instead.`);
     console.info("[BubbleForge] Drag started", {
       types: [DRAG_MIME, "application/json", "text/plain"],
       component
