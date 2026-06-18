@@ -3,7 +3,7 @@
   "name": "BubbleForge Extension V0",
   "description": "Local prototype for testing Bubble component library clipboard insertion.",
   "version": "0.0.1",
-  "permissions": ["clipboardWrite"],
+  "permissions": ["clipboardRead", "clipboardWrite"],
   "host_permissions": [
     "https://bubble.io/page*",
     "https://*.bubbleapps.io/*"

@@ -430,12 +430,25 @@
   cursor: pointer;
 }
 
+#bubbleforge-extension-v0-root .bf-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 #bubbleforge-extension-v0-root .bf-copy-button,
 #bubbleforge-extension-v0-root .bf-primary {
   margin: 0 14px 14px;
   border: 1px solid #2563eb;
   color: #ffffff;
   background: #2563eb;
+}
+
+#bubbleforge-extension-v0-root .bf-button-row .bf-primary,
+#bubbleforge-extension-v0-root .bf-button-row .bf-secondary {
+  margin: 0;
+  padding: 0 14px;
 }
 
 #bubbleforge-extension-v0-root .bf-copy-button:hover,
@@ -449,6 +462,14 @@
   border: 1px solid #cbd5e1;
   color: #111827;
   background: #ffffff;
+}
+
+#bubbleforge-extension-v0-root .bf-primary:disabled,
+#bubbleforge-extension-v0-root .bf-secondary:disabled {
+  border-color: #d1d5db;
+  color: #9ca3af;
+  background: #f3f4f6;
+  cursor: not-allowed;
 }
 
 #bubbleforge-extension-v0-root .bf-tools {

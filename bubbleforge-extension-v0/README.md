@@ -47,6 +47,8 @@ The extension also logs attempted drops to Chrome DevTools.
 
 This does not guarantee Bubble will accept the drop yet. It is an experiment to learn whether Bubble editor drop targets read browser `DataTransfer` payloads.
 
+When drag starts, BubbleForge also writes the component JSON to the clipboard. If dropping does nothing, click the Bubble editor canvas and press `Ctrl+V`.
+
 ## Clipboard Experiment
 
 When `Copy Component` is clicked, the extension tries:
@@ -77,6 +79,23 @@ The next paste event logs:
 - `text/plain` content
 
 The payload appears in the sidebar and in Chrome DevTools.
+
+## Capture And Replay Real Bubble Clipboard Data
+
+This is the most important research workflow.
+
+1. Build a simple native Bubble button.
+2. Select it in the Bubble editor.
+3. Press `Ctrl+C`.
+4. Open BubbleForge `Tools`.
+5. Click `Read Clipboard Now`.
+6. Inspect the captured MIME types and payload previews.
+7. Click `Replay Last Clipboard`.
+8. Click the Bubble canvas and press `Ctrl+V`.
+
+If the replayed payload inserts the same Bubble button, we have validated the core insertion mechanism.
+
+If replay fails, check DevTools for errors. Some clipboard MIME types may require special handling or may be blocked by Chrome.
 
 ## Capture Real Bubble Clipboard Data
 
@@ -116,6 +135,7 @@ Each component uses this shape:
 - Real Bubble JSON has not been captured yet.
 - Copy/paste may need additional MIME types after Bubble clipboard research.
 - Drag and drop is experimental and may not insert into Bubble until the real Bubble payload format is known.
+- Clipboard replay is experimental and depends on the MIME types Bubble uses.
 - No backend.
 - No AI generation.
 - No authentication.

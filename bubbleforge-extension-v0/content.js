@@ -10,6 +10,7 @@
   let activeCategory = "All";
   let searchQuery = "";
   let logNextPaste = false;
+  let lastClipboardPayload = readStoredClipboardPayload();
 
   if (document.getElementById(ROOT_ID)) {
     return;
@@ -144,6 +145,16 @@
         </div>
 
         <div class="bf-tool-card">
+          <h2>Clipboard Capture And Replay</h2>
+          <p>Copy a real Bubble element first, then read the current clipboard. If we capture Bubble's private payload, replaying it is the insertion unlock.</p>
+          <div class="bf-button-row">
+            <button class="bf-primary" type="button" data-action="read-clipboard">Read Clipboard Now</button>
+            <button class="bf-secondary" type="button" data-action="replay-clipboard" ${lastClipboardPayload ? "" : "disabled"}>Replay Last Clipboard</button>
+          </div>
+          <pre class="bf-log" data-role="clipboard-log">${escapeHtml(lastClipboardPayload ? formatPayloadSummary(lastClipboardPayload) : "No clipboard payload captured yet.")}</pre>
+        </div>
+
+        <div class="bf-tool-card">
           <h2>Current Selection Capture</h2>
           <p>This is the manual research workflow for finding Bubble's real clipboard format.</p>
           <button class="bf-secondary" type="button" data-action="instructions">Copy Current Selection Instructions</button>
@@ -152,8 +163,9 @@
               <li>Build a simple button in Bubble.</li>
               <li>Select the button in the Bubble editor.</li>
               <li>Press Ctrl+C.</li>
-              <li>Click Log Next Paste in BubbleForge.</li>
-              <li>Paste into the Bubble page and inspect the clipboard payload in DevTools.</li>
+              <li>Click Read Clipboard Now in BubbleForge.</li>
+              <li>Inspect the clipboard payload in the panel and DevTools.</li>
+              <li>Click Replay Last Clipboard, then paste into the Bubble editor.</li>
             </ol>
           </div>
         </div>
@@ -256,6 +268,14 @@
         if (action === "instructions") {
           showInstructions();
         }
+
+        if (action === "read-clipboard") {
+          readClipboardNow();
+        }
+
+        if (action === "replay-clipboard") {
+          replayLastClipboard();
+        }
       });
     });
   }
@@ -287,12 +307,10 @@
 
     try {
       if (navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "application/json": new Blob([json], { type: "application/json" }),
-            "text/plain": new Blob([json], { type: "text/plain" })
-          })
-        ]);
+        await writeClipboardTypes({
+          "application/json": json,
+          "text/plain": json
+        });
       } else {
         throw new Error("ClipboardItem is not available");
       }
@@ -334,6 +352,16 @@
     event.dataTransfer.setData(DRAG_MIME, payload);
     event.dataTransfer.setData("application/json", json);
     event.dataTransfer.setData("text/plain", json);
+    writeClipboardTypes({
+      "application/json": json,
+      "text/plain": json
+    })
+      .then(() => {
+        showToast(`Dragging ${component.name}. Clipboard also updated; if drop fails, press Ctrl+V.`);
+      })
+      .catch((error) => {
+        console.warn("[BubbleForge] Drag clipboard write failed", error);
+      });
 
     const dragImage = createDragImage(component);
     document.documentElement.appendChild(dragImage);
@@ -395,11 +423,16 @@
     const text = clipboardData ? clipboardData.getData("text/plain") : "";
 
     const payload = {
+      source: "paste-event",
+      capturedAt: new Date().toISOString(),
       types,
-      applicationJson: json || null,
-      textPlain: text || null
+      items: {
+        "application/json": json || null,
+        "text/plain": text || null
+      }
     };
 
+    saveClipboardPayload(payload);
     console.info("[BubbleForge] Paste payload", payload);
     refresh();
 
@@ -410,6 +443,116 @@
     }
 
     showToast("Paste payload logged in panel and DevTools.");
+  }
+
+  async function readClipboardNow() {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error("navigator.clipboard is not available on this page");
+      }
+
+      const payload = {
+        source: "navigator.clipboard.read",
+        capturedAt: new Date().toISOString(),
+        types: [],
+        items: {}
+      };
+
+      if (navigator.clipboard.read) {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          for (const type of item.types) {
+            payload.types.push(type);
+            const blob = await item.getType(type);
+            payload.items[type] = await blob.text();
+          }
+        }
+      } else {
+        const text = await navigator.clipboard.readText();
+        payload.types.push("text/plain");
+        payload.items["text/plain"] = text;
+      }
+
+      payload.types = Array.from(new Set(payload.types));
+      saveClipboardPayload(payload);
+      console.info("[BubbleForge] Clipboard read payload", payload);
+      activeTab = "Tools";
+      refresh();
+      showToast("Clipboard payload captured. Check panel and DevTools.");
+    } catch (error) {
+      console.error("[BubbleForge] Clipboard read failed", error);
+      showToast("Clipboard read failed. Copy from Bubble, then click again.");
+    }
+  }
+
+  async function replayLastClipboard() {
+    if (!lastClipboardPayload || !lastClipboardPayload.items) {
+      showToast("No captured clipboard payload to replay.");
+      return;
+    }
+
+    try {
+      await writeClipboardTypes(lastClipboardPayload.items);
+      console.info("[BubbleForge] Replayed clipboard payload", lastClipboardPayload);
+      showToast("Last clipboard payload replayed. Paste into Bubble editor now.");
+    } catch (error) {
+      console.error("[BubbleForge] Clipboard replay failed", error);
+      showToast("Clipboard replay failed. Some MIME types may be blocked.");
+    }
+  }
+
+  async function writeClipboardTypes(items) {
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      throw new Error("ClipboardItem is not available");
+    }
+
+    const clipboardItem = {};
+    Object.entries(items).forEach(([type, value]) => {
+      if (value === null || value === undefined) {
+        return;
+      }
+      clipboardItem[type] = new Blob([String(value)], { type });
+    });
+
+    await navigator.clipboard.write([new ClipboardItem(clipboardItem)]);
+  }
+
+  function saveClipboardPayload(payload) {
+    lastClipboardPayload = payload;
+    try {
+      sessionStorage.setItem("bubbleforge:lastClipboardPayload", JSON.stringify(payload));
+    } catch (error) {
+      console.warn("[BubbleForge] Could not store clipboard payload", error);
+    }
+  }
+
+  function readStoredClipboardPayload() {
+    try {
+      const raw = sessionStorage.getItem("bubbleforge:lastClipboardPayload");
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.warn("[BubbleForge] Could not read stored clipboard payload", error);
+      return null;
+    }
+  }
+
+  function formatPayloadSummary(payload) {
+    const preview = {
+      source: payload.source,
+      capturedAt: payload.capturedAt,
+      types: payload.types,
+      items: {}
+    };
+
+    Object.entries(payload.items || {}).forEach(([type, value]) => {
+      const text = String(value || "");
+      preview.items[type] = {
+        length: text.length,
+        preview: text.slice(0, 1200)
+      };
+    });
+
+    return JSON.stringify(preview, null, 2);
   }
 
   function showInstructions() {
