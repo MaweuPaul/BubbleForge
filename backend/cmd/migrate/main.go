@@ -40,6 +40,7 @@ func main() {
 	migrations := []string{
 		"migrations/002_drop_bubble_json.sql",
 		"migrations/003_property_registry.sql",
+		"migrations/004_property_descriptions.sql",
 	}
 
 	for _, path := range migrations {

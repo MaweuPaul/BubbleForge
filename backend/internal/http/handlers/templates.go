@@ -143,7 +143,51 @@ func schemaForCategory(category string) (string, string) {
 		schemaStr = `{"label": {"type": "text", "label": "Preview Text", "default": "Container"}, "bgcolor": {"type": "color", "label": "Background", "default": "var(--color_surface_default)"}, "fgcolor": {"type": "color", "label": "Text Color", "default": "var(--color_text_default)"}, "radius": {"type": "number", "label": "Radius", "default": 8, "min": 0, "max": 80}, "padding": {"type": "number", "label": "Padding", "default": 16, "min": 0, "max": 64}}`
 	}
 
-	return componentTypeID, schemaStr
+	return componentTypeID, addSchemaDescriptions(schemaStr)
+}
+
+func addSchemaDescriptions(schemaStr string) string {
+	descriptions := map[string]string{
+		"label":          "Controls Bubble text content. For text/button elements this maps to properties.text.entries.0.",
+		"text":           "Controls Bubble text content. Usually maps to properties.text.entries.0.",
+		"width":          "Controls Bubble element width via properties.width.",
+		"height":         "Controls Bubble element height via properties.height.",
+		"min_width_css":  "Controls Bubble responsive minimum width via properties.min_width_css.",
+		"min_height_css": "Controls Bubble responsive minimum height via properties.min_height_css.",
+		"bgcolor":        "Controls the element background/fill color. Usually maps to properties.bgcolor or properties.background_color.",
+		"fgcolor":        "Controls the main text/icon color. Usually maps to Bubble properties.font_color.",
+		"border_color":   "Controls the element border color via properties.border_color.",
+		"border_style":   "Controls Bubble border style via properties.border_style, such as none or solid.",
+		"border_width":   "Controls Bubble border thickness via properties.border_width.",
+		"radius":         "Controls corner roundness via Bubble properties.border_roundness.",
+		"padding":        "Controls inner spacing. Can map to properties.padding or the four padding side properties.",
+		"font_size":      "Controls text size via Bubble properties.font_size.",
+		"font_weight":    "Controls text weight where supported. Can map to font weight related Bubble properties.",
+		"font_bold":      "Controls Bubble bold text via properties.font_bold.",
+		"icon":           "Controls the icon value for icon-capable Bubble elements.",
+		"align":          "Controls text/layout alignment. Usually maps to Bubble alignment properties.",
+		"image_url":      "Controls the image source/url for Bubble image elements.",
+		"alt":            "Controls image alternative text where Bubble exposes alt text metadata.",
+		"fit":            "Controls how image content fits inside its box, such as cover, contain, or fill.",
+		"shadow":         "Controls visual elevation in Bubble JSON when the base element contains shadow-related properties.",
+	}
+
+	var schema map[string]map[string]any
+	if err := json.Unmarshal([]byte(schemaStr), &schema); err != nil {
+		return schemaStr
+	}
+	for key, description := range descriptions {
+		if field, ok := schema[key]; ok {
+			if _, exists := field["description"]; !exists {
+				field["description"] = description
+			}
+		}
+	}
+	bytes, err := json.Marshal(schema)
+	if err != nil {
+		return schemaStr
+	}
+	return string(bytes)
 }
 
 func slugify(v string) string {

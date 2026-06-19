@@ -68,12 +68,12 @@ func main() {
 	}`
 
 	schemaStr := `{
-		"label": {"type": "text", "label": "Label", "default": "Button", "description": "The text displayed inside the button."},
-		"bgcolor": {"type": "color", "label": "Background", "default": "#0f172a", "description": "The main background color of the button."},
-		"fgcolor": {"type": "color", "label": "Text Color", "default": "#ffffff", "description": "The color of the label text."},
-		"border_color": {"type": "color", "label": "Border Color", "default": "transparent", "description": "The color of the button's outer edge."},
-		"border_style": {"type": "text", "label": "Border Style", "default": "none", "description": "Set to solid, dashed, or none."},
-		"radius": {"type": "number", "label": "Radius", "default": 6, "description": "How rounded the corners should be (in px)."}
+		"label": {"type": "text", "label": "Label", "default": "Button", "description": "Controls Bubble's 'text' property."},
+		"bgcolor": {"type": "color", "label": "Background", "default": "#0f172a", "description": "Controls Bubble's 'bgcolor' property."},
+		"fgcolor": {"type": "color", "label": "Text Color", "default": "#ffffff", "description": "Controls Bubble's 'font_color' property."},
+		"border_color": {"type": "color", "label": "Border Color", "default": "transparent", "description": "Controls Bubble's 'border_color' property."},
+		"border_style": {"type": "text", "label": "Border Style", "default": "none", "description": "Controls Bubble's 'border_style' property (solid, dashed, none)."},
+		"radius": {"type": "number", "label": "Radius", "default": 6, "description": "Controls Bubble's 'border_roundness' property."}
 	}`
 
 	var baseJSON map[string]any
