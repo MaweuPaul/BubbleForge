@@ -121,8 +121,8 @@ func main() {
 			"label":   map[string]any{"type": "string", "default": "Submit", "token": "{{LABEL}}"},
 			"width":   map[string]any{"type": "number", "default": 150, "token": "{{WIDTH}}"},
 			"height":  map[string]any{"type": "number", "default": 44, "token": "{{HEIGHT}}"},
-			"bgcolor": map[string]any{"type": "color", "default": "#ea580c", "token": "{{PRIMARY_COLOR}}"},
-			"fgcolor": map[string]any{"type": "color", "default": "#ffffff", "token": "{{TEXT_COLOR}}"},
+			"bgcolor": map[string]any{"type": "color", "default": "var(--color_primary_default)", "token": "{{PRIMARY_COLOR}}"},
+			"fgcolor": map[string]any{"type": "color", "default": "var(--color_primary_contrast_default)", "token": "{{TEXT_COLOR}}"},
 			"radius":  map[string]any{"type": "number", "default": 8, "token": "{{RADIUS}}"},
 			"icon":    map[string]any{"type": "string", "default": "", "token": "{{ICON}}"},
 			"button_type": map[string]any{

@@ -32,6 +32,7 @@ func main() {
 		{"type_badge", "Badge", "badge", "Status badges"},
 		{"type_card", "Card", "card", "Container cards"},
 		{"type_text", "Text", "text", "Typography blocks"},
+		{"type_image", "Image", "image", "Image and media blocks"},
 		{"type_icon", "Icon", "icon", "Vector icons"},
 		{"type_container", "Container", "container", "Layout wrappers"},
 	}

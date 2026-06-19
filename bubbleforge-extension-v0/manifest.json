@@ -23,7 +23,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["drag-probe.js"],
+      "resources": ["drag-probe.js", "recorder-probe.js"],
       "matches": ["https://bubble.io/*", "https://*.bubbleapps.io/*"]
     }
   ]

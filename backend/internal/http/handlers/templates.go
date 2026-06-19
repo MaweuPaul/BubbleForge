@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/MaweuPaul/BubbleForge/backend/internal/compiler"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -101,4 +103,99 @@ func (h *TemplatesHandler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, t)
+}
+
+type ImportRequest struct {
+	Name          string         `json:"name" binding:"required"`
+	Category      string         `json:"category" binding:"required"`
+	Description   string         `json:"description"`
+	RawBubbleJSON map[string]any `json:"raw_bubble_json" binding:"required"`
+}
+
+func (h *TemplatesHandler) Import(c *gin.Context) {
+	var req ImportRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: " + err.Error()})
+		return
+	}
+
+	// 1. Clean the raw JSON from Bubble
+	cleanedJSON := compiler.StripUnsafeFields(req.RawBubbleJSON)
+
+	// 1.5. Auto-Tokenize based on Category
+	tokenizedJSON := compiler.AutoTokenize(cleanedJSON, req.Category)
+
+	// 2. Generate IDs
+	templateID := "tmpl_" + compiler.GenerateElementID() + compiler.GenerateElementID()
+	componentID := "comp_" + compiler.GenerateElementID() + compiler.GenerateElementID()
+
+	// Create a slug from name
+	slug := strings.ToLower(strings.ReplaceAll(req.Name, " ", "-")) + "-" + compiler.GenerateElementID()
+
+	// Determine component type and default schema based on category
+	componentTypeID := "type_container"
+	schemaStr := "{}"
+
+	catLower := strings.ToLower(req.Category)
+	if strings.Contains(catLower, "button") {
+		componentTypeID = "type_button"
+		schemaStr = `{"label": {"type": "text", "label": "Label", "default": "Button"}, "bgcolor": {"type": "color", "label": "Background", "default": "var(--color_primary_default)"}, "fgcolor": {"type": "color", "label": "Text Color", "default": "var(--color_primary_contrast_default)"}, "radius": {"type": "number", "label": "Radius", "default": 8}, "icon": {"type": "text", "label": "Icon", "default": ""}}`
+	} else if strings.Contains(catLower, "text") {
+		componentTypeID = "type_text"
+		schemaStr = `{"label": {"type": "text", "label": "Text Content", "default": "Your text here"}, "fgcolor": {"type": "color", "label": "Text Color", "default": "var(--color_text_default)"}}`
+	} else if strings.Contains(catLower, "image") {
+		componentTypeID = "type_image"
+		schemaStr = `{"image_url": {"type": "url", "label": "Image URL", "default": "https://placehold.co/600x400"}, "radius": {"type": "number", "label": "Radius", "default": 8}}`
+	} else {
+		// Generic container/card schema
+		schemaStr = `{"bgcolor": {"type": "color", "label": "Background", "default": "var(--color_surface_default)"}, "radius": {"type": "number", "label": "Radius", "default": 8}}`
+	}
+
+	componentTypeName := strings.TrimPrefix(componentTypeID, "type_")
+	componentTypeName = strings.ToUpper(componentTypeName[:1]) + componentTypeName[1:]
+	_, err := h.DB.Exec(c.Request.Context(), `
+		INSERT INTO component_types (id, name, slug, description)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (slug) DO NOTHING
+	`, componentTypeID, componentTypeName, strings.TrimPrefix(componentTypeID, "type_"), "Imported component type")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to ensure component type: " + err.Error()})
+		return
+	}
+
+	// 3. Save Template
+	_, err = h.DB.Exec(c.Request.Context(), `
+		INSERT INTO component_templates (id, component_type_id, name, slug, base_json, property_schema, status)
+		VALUES ($1, $2, $3, $4, $5, $6, 'published')
+	`, templateID, componentTypeID, req.Name, slug, tokenizedJSON, schemaStr)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save template: " + err.Error()})
+		return
+	}
+
+	// 4. Save Component linking to template
+	_, err = h.DB.Exec(c.Request.Context(), `
+		INSERT INTO components (id, category, name, description, access, template_id, property_values)
+		VALUES ($1, $2, $3, $4, 'Free', $5, '{}')
+	`, componentID, req.Category, req.Name, req.Description, templateID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save component: " + err.Error()})
+		return
+	}
+
+	// Fetch the created component to return
+	var comp struct {
+		ID         string `json:"id"`
+		Name       string `json:"name"`
+		Category   string `json:"category"`
+		TemplateID string `json:"template_id"`
+	}
+	comp.ID = componentID
+	comp.Name = req.Name
+	comp.Category = req.Category
+	comp.TemplateID = templateID
+
+	c.JSON(http.StatusCreated, comp)
 }

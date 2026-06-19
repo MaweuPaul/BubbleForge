@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/MaweuPaul/BubbleForge/backend/internal/compiler"
+	"github.com/MaweuPaul/BubbleForge/backend/internal/theme"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -27,6 +28,7 @@ type Component struct {
 	BubbleJSON     any            `json:"bubbleJson,omitempty"`
 	TemplateID     *string        `json:"template_id,omitempty"`
 	PropertyValues map[string]any `json:"property_values,omitempty"`
+	PropertySchema any            `json:"property_schema,omitempty"`
 }
 
 func (h *ComponentsHandler) GetByID(c *gin.Context) {
@@ -35,9 +37,12 @@ func (h *ComponentsHandler) GetByID(c *gin.Context) {
 	var comp Component
 	var propValsBytes []byte
 	err := h.DB.QueryRow(c.Request.Context(),
-		"SELECT id, category, name, description, access, template_id, property_values FROM components WHERE id = $1",
+		`SELECT c.id, c.category, c.name, c.description, c.access, c.template_id, c.property_values, t.property_schema 
+		 FROM components c 
+		 LEFT JOIN component_templates t ON c.template_id = t.id 
+		 WHERE c.id = $1`,
 		id,
-	).Scan(&comp.ID, &comp.Category, &comp.Name, &comp.Description, &comp.Access, &comp.TemplateID, &propValsBytes)
+	).Scan(&comp.ID, &comp.Category, &comp.Name, &comp.Description, &comp.Access, &comp.TemplateID, &propValsBytes, &comp.PropertySchema)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Component not found"})
@@ -52,7 +57,12 @@ func (h *ComponentsHandler) GetByID(c *gin.Context) {
 }
 
 func (h *ComponentsHandler) List(c *gin.Context) {
-	rows, err := h.DB.Query(c.Request.Context(), "SELECT id, category, name, description, access, template_id, property_values FROM components ORDER BY created_at ASC")
+	rows, err := h.DB.Query(c.Request.Context(), `
+		SELECT c.id, c.category, c.name, c.description, c.access, c.template_id, c.property_values, t.property_schema 
+		FROM components c 
+		LEFT JOIN component_templates t ON c.template_id = t.id 
+		ORDER BY c.created_at ASC
+	`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query database"})
 		return
@@ -63,8 +73,8 @@ func (h *ComponentsHandler) List(c *gin.Context) {
 	for rows.Next() {
 		var comp Component
 		var propValsBytes []byte
-		if err := rows.Scan(&comp.ID, &comp.Category, &comp.Name, &comp.Description, &comp.Access, &comp.TemplateID, &propValsBytes); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan database row"})
+		if err := rows.Scan(&comp.ID, &comp.Category, &comp.Name, &comp.Description, &comp.Access, &comp.TemplateID, &propValsBytes, &comp.PropertySchema); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan database row: " + err.Error()})
 			return
 		}
 		if propValsBytes != nil {
@@ -233,15 +243,8 @@ func (h *ComponentsHandler) Compile(c *gin.Context) {
 		return
 	}
 
-	// 4. Load global brand_tokens defaults
-	brandTokens := map[string]string{
-		"PRIMARY_COLOR":    "#ea580c",
-		"SECONDARY_COLOR":  "#0f172a",
-		"TEXT_COLOR":       "#ffffff",
-		"BACKGROUND_COLOR": "#ffffff",
-		"RADIUS":           "8",
-		"FONT_FAMILY":      "Inter, ui-sans-serif",
-	}
+	// 4. Load BubbleForge theme defaults, then optionally override from legacy brand_tokens.
+	brandTokens := theme.CompilerTokenMap(theme.DefaultValues())
 
 	var pColor, sColor, tColor, bColor, font string
 	var radius int

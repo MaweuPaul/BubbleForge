@@ -106,6 +106,7 @@ Detached mode is the default V0 path. Styleset mode is the next research/build t
 
 - [Development](docs/development.md)
 - [Bubble Compiler](docs/compiler.md)
+- [Theme Schema](docs/theme-schema.md)
 - [Bubble Editor Research](docs/bubble-research.md)
 - [Styleset Importer](docs/styleset-importer.md)
 - [Backend](backend/README.md)
