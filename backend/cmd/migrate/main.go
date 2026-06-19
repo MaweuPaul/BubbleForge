@@ -37,15 +37,22 @@ func main() {
 		log.Fatalf("Migration 001 failed: %v\n", err)
 	}
 
-	sqlBytes2, err := os.ReadFile("migrations/002_drop_bubble_json.sql")
-	if err != nil {
-		log.Fatalf("Failed to read migration 002 file: %v\n", err)
+	migrations := []string{
+		"migrations/002_drop_bubble_json.sql",
+		"migrations/003_property_registry.sql",
 	}
 
-	fmt.Println("Running migration 002_drop_bubble_json.sql...")
-	_, err = pool.Exec(ctx, string(sqlBytes2))
-	if err != nil {
-		log.Fatalf("Migration 002 failed: %v\n", err)
+	for _, path := range migrations {
+		sqlBytes, err := os.ReadFile(path)
+		if err != nil {
+			log.Fatalf("Failed to read migration file %s: %v\n", path, err)
+		}
+
+		fmt.Printf("Running %s...\n", path)
+		_, err = pool.Exec(ctx, string(sqlBytes))
+		if err != nil {
+			log.Fatalf("Migration failed for %s: %v\n", path, err)
+		}
 	}
 
 	fmt.Println("All migrations completed successfully!")

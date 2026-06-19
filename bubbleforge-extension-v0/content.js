@@ -59,6 +59,7 @@
         text:            toHex("--color_text_default")            || activeTheme.text,
         surface:         toHex("--color_surface_default")         || activeTheme.surface,
         background:      toHex("--color_background_default")      || activeTheme.background,
+        border:          toHex("--color_border_default")          || activeTheme.border,
         destructive:     toHex("--color_destructive_default")     || activeTheme.destructive,
         success:         toHex("--color_success_default")         || activeTheme.success,
         alert:           toHex("--color_alert_default")           || activeTheme.alert,
@@ -93,10 +94,59 @@
     if (color.includes("--color_destructive_default")) return activeTheme.destructive;
     if (color.includes("--color_success_default")) return activeTheme.success;
     if (color.includes("--color_alert_default")) return activeTheme.alert;
+    if (color.includes("--color_border_default")) return activeTheme.border;
     // rgba fallback
     const hex = rgbaToCssHex(color);
     if (hex) return hex;
     return activeTheme.primary;
+  }
+
+  function resolveThemeValue(value) {
+    if (typeof value !== "string") return value;
+    if (value === "transparent") return value;
+    if (value.includes("--color_primary_default") && !value.includes("contrast")) return activeTheme.primary;
+    if (value.includes("--color_primary_contrast_default")) return activeTheme.primaryContrast;
+    if (value.includes("--color_text_default")) return activeTheme.text;
+    if (value.includes("--color_surface_default")) return activeTheme.surface;
+    if (value.includes("--color_background_default")) return activeTheme.background;
+    if (value.includes("--color_border_default")) return activeTheme.border;
+    if (value.includes("--color_destructive_default")) return activeTheme.destructive;
+    if (value.includes("--color_success_default")) return activeTheme.success;
+    if (value.includes("--color_alert_default")) return activeTheme.alert;
+    return value;
+  }
+
+  function resolveCustomizationValues(values) {
+    const out = {};
+    for (const [key, value] of Object.entries(values || {})) {
+      out[key] = resolveThemeValue(value);
+    }
+    return out;
+  }
+
+  function applySemanticButtonDefaults(component, values) {
+    const c = { ...values };
+    const name = component.name || "";
+
+    if (name === "Outline Button" || name === "Ghost Button" || name === "Link Button") {
+      c.bgcolor = "transparent";
+      c.fgcolor = activeTheme.primary;
+    } else if (name === "Soft Button") {
+      c.bgcolor = getSoftBgColor(activeTheme.primary);
+      c.fgcolor = activeTheme.primary;
+    } else if (name === "Destructive Button") {
+      c.bgcolor = activeTheme.destructive;
+      c.fgcolor = activeTheme.primaryContrast;
+    } else if (name === "Solid Button" || name === "Pill Button" || name === "Icon Button" || name === "FAB Button") {
+      c.bgcolor = activeTheme.primary;
+      c.fgcolor = activeTheme.primaryContrast;
+    }
+
+    return c;
+  }
+
+  function resolveComponentCustomization(component, values) {
+    return applySemanticButtonDefaults(component, resolveCustomizationValues(values));
   }
 
   function normalizeHex(hex) {
@@ -159,6 +209,7 @@
     text:            "#1a1a1a",
     surface:         "#ffffff",
     background:      "#ffffff",
+    border:          "#e2e8f0",
     destructive:     "#dc2626",
     success:         "#16a34a",
     alert:           "#d97706",
@@ -229,14 +280,15 @@
       }
     } else {
       // Fallback for legacy components without schema
-      const p  = activeTheme.primary;
-      const pc = activeTheme.primaryContrast;
       c.label = component.name;
-      c.bgcolor = p;
-      c.fgcolor = pc;
+      c.bgcolor = activeTheme.primary;
+      c.fgcolor = activeTheme.primaryContrast;
       c.radius = 8;
     }
-    return c;
+    if (component.property_values && typeof component.property_values === "object") {
+      Object.assign(c, component.property_values);
+    }
+    return resolveComponentCustomization(component, c);
   }
 
   if (document.getElementById(ROOT_ID)) return;
@@ -299,6 +351,53 @@
     } catch (e) {
       console.error(e);
       showToast("❌ Import failed: " + e.message);
+    } finally {
+      btn.textContent = originalText;
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+    }
+  }
+
+  async function runElementDefinitionImport(btn) {
+    const name = document.getElementById("bf-element-name")?.value.trim();
+    const bubbleType = document.getElementById("bf-element-type")?.value.trim();
+    const cat = document.getElementById("bf-element-cat")?.value.trim();
+    const desc = document.getElementById("bf-element-desc")?.value.trim();
+    if (!name || !bubbleType || !cat) return showToast("Name, Bubble type, and Category are required.");
+
+    const originalText = btn.textContent;
+    btn.textContent = "Reading clipboard...";
+    btn.style.opacity = "0.6";
+    btn.style.pointerEvents = "none";
+
+    try {
+      const text = await navigator.clipboard.readText();
+      const rawJson = JSON.parse(text);
+
+      btn.textContent = "Saving definition...";
+      const resp = await fetch("http://localhost:8081/api/v1/element-definitions/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          bubble_type: bubbleType,
+          category: cat,
+          description: desc,
+          raw_bubble_json: rawJson
+        })
+      });
+
+      if (!resp.ok) throw new Error(await resp.text());
+      showToast("Element definition saved. Starter preset added.");
+      activeTab = "Components";
+      activeCategory = cat;
+      fetchComponents();
+
+      if (document.getElementById("bf-element-name")) document.getElementById("bf-element-name").value = "";
+      if (document.getElementById("bf-element-desc")) document.getElementById("bf-element-desc").value = "";
+    } catch (e) {
+      console.error(e);
+      showToast("Element import failed: " + e.message);
     } finally {
       btn.textContent = originalText;
       btn.style.opacity = "1";
@@ -717,6 +816,7 @@
       // We will render fields. To keep it compact, we can just use margin-bottom.
       for (const [key, prop] of Object.entries(schema)) {
         const val = c[key] !== undefined ? c[key] : prop.default;
+        const descHtml = prop.description ? `<p style="font-size:11px;color:#94a3b8;margin:4px 0 0 0;line-height:1.3;">${escapeHtml(prop.description)}</p>` : "";
         
         if (prop.type === "color") {
           const hex = toColorInputValue(val);
@@ -728,12 +828,33 @@
                 <input class="bf-field-color" id="bf-${key}-${id}" type="color" value="${hex}" data-prop="${escapeHtml(key)}" data-comp="${id}">
                 <span class="bf-color-field-hex">${escapeHtml(display)}</span>
               </div>
+              ${descHtml}
             </div>`;
         } else if (prop.type === "number") {
           html += `
             <div class="bf-field" style="margin-bottom:12px">
               <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)} <span class="bf-field-value">${escapeHtml(val)}</span></label>
               <input class="bf-field-range" id="bf-${key}-${id}" type="range" min="${prop.min || 0}" max="${prop.max || 999}" value="${escapeHtml(val)}" data-prop="${escapeHtml(key)}" data-comp="${id}">
+              ${descHtml}
+            </div>`;
+        } else if (prop.type === "select") {
+          const options = Array.isArray(prop.options) ? prop.options : [];
+          html += `
+            <div class="bf-field" style="margin-bottom:12px">
+              <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)}</label>
+              <select class="bf-field-input" id="bf-${key}-${id}" data-prop="${escapeHtml(key)}" data-comp="${id}">
+                ${options.map((opt) => `<option value="${escapeHtml(opt)}" ${String(opt) === String(val) ? "selected" : ""}>${escapeHtml(opt)}</option>`).join("")}
+              </select>
+              ${descHtml}
+            </div>`;
+        } else if (prop.type === "boolean") {
+          html += `
+            <div style="margin-bottom:12px">
+              <label class="bf-field" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0">
+                <input type="checkbox" ${val ? "checked" : ""} data-prop="${escapeHtml(key)}" data-comp="${id}" style="width:16px;height:16px;accent-color:${activeTheme.primary}">
+                <span class="bf-field-label" style="margin:0">${escapeHtml(prop.label)}</span>
+              </label>
+              ${descHtml}
             </div>`;
         } else {
           // text, url, etc.
@@ -742,6 +863,7 @@
             <div class="bf-field" style="margin-bottom:12px">
               <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)}</label>
               <input class="bf-field-input" id="bf-${key}-${id}" type="${inputType}" value="${escapeHtml(val)}" data-prop="${escapeHtml(key)}" data-comp="${id}">
+              ${descHtml}
             </div>`;
         }
       }
@@ -758,45 +880,99 @@
 
   function renderPreview(component, c) {
     const cat = (component.category || "").toLowerCase();
+    const values = resolveCustomizationValues(c);
     
     // Attempt to extract values from dynamic schema customizations
-    const label = escapeHtml(c.label || c.text || component.name);
-    const r = c.radius !== undefined ? c.radius : 8;
-    const bg = c.bgcolor || activeTheme.primary;
-    const fg = c.fgcolor || activeTheme.primaryContrast;
+    const label = escapeHtml(values.label || values.text || component.name);
+    const r = values.radius !== undefined ? values.radius : 8;
+    const bg = values.bgcolor || activeTheme.primary;
+    const fg = values.fgcolor || activeTheme.primaryContrast;
+    const border = values.border_color || activeTheme.border;
+    const fontSize = values.font_size || 16;
+    const fontWeight = values.font_bold ? 700 : (values.font_weight || 500);
+    const align = values.align || "left";
+    const padding = values.padding !== undefined ? values.padding : 16;
+    const shadowMap = {
+      none: "none",
+      sm: "0 1px 2px rgba(15, 23, 42, 0.08)",
+      md: "0 8px 24px rgba(15, 23, 42, 0.10)"
+    };
+    const shadow = shadowMap[values.shadow] || shadowMap.md;
 
     // Legacy Button specific rendering to keep cool UI
     switch (component.name) {
       case "Outline Button":
-        return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:2px solid ${fg};border-radius:${r}px">${label}</div>`;
+        return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:2px solid ${border || fg};border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight}">${label}</div>`;
       case "Ghost Button":
-        return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:none;border-radius:${r}px">${label}</div>`;
+        return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:none;border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight}">${label}</div>`;
       case "Soft Button":
-        return `<div class="bf-prev-btn" style="background:${getSoftBgColor(fg)};color:${fg};border:none;border-radius:${r}px">${label}</div>`;
+        return `<div class="bf-prev-btn" style="background:${getSoftBgColor(fg)};color:${fg};border:none;border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight}">${label}</div>`;
       case "Destructive Button":
-        return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border:none;border-radius:${r}px;box-shadow:0 2px 8px rgba(220,38,38,0.35)">${label}</div>`;
+        return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border:none;border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight};box-shadow:0 2px 8px rgba(220,38,38,0.35)">${label}</div>`;
       case "Icon Button":
         return `<div class="bf-prev-icon-wrap"><div class="bf-prev-btn" style="background:${bg};color:${fg};border:1px solid #e2e8f0;border-radius:${r}px;width:44px;height:44px;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;min-width:unset;box-shadow:0 1px 4px rgba(0,0,0,0.08)">+</div></div>`;
       case "FAB Button":
         return `<div class="bf-prev-icon-wrap"><div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:999px;width:56px;height:56px;font-size:24px;display:flex;align-items:center;justify-content:center;padding:0;min-width:unset;box-shadow:0 4px 16px rgba(234,88,12,0.4)">+</div></div>`;
       case "Link Button":
-        return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:none;padding:0;font-weight:500;text-decoration:underline;text-underline-offset:4px;text-decoration-color:${fg};height:auto">${label}</div>`;
+        return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:none;padding:0;font-size:${fontSize}px;font-weight:${fontWeight};text-decoration:underline;text-underline-offset:4px;text-decoration-color:${fg};height:auto">${label}</div>`;
       case "Pill Button":
-        return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:999px;padding:0 24px;box-shadow:0 2px 8px rgba(234,88,12,0.3)">${label}</div>`;
+        return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:999px;padding:0 24px;font-size:${fontSize}px;font-weight:${fontWeight};box-shadow:0 2px 8px rgba(234,88,12,0.3)">${label}</div>`;
     }
 
     // Dynamic rendering by category
     if (cat.includes("button")) {
-      return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:${r}px;box-shadow:0 2px 8px rgba(0,0,0,0.15)">${label}</div>`;
+      return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight};box-shadow:0 2px 8px rgba(0,0,0,0.15)">${label}</div>`;
     } else if (cat.includes("text") || cat.includes("typography")) {
-      return `<div style="color:${fg};font-size:16px;font-family:${activeTheme.font};font-weight:500;line-height:1.4;max-width:100%;word-break:break-word">${label}</div>`;
+      return `<div style="color:${fg};font-size:${fontSize}px;font-family:${activeTheme.font};font-weight:${fontWeight};line-height:1.4;text-align:${align};max-width:100%;width:100%;word-break:break-word">${label}</div>`;
     } else if (cat.includes("image") || cat.includes("media")) {
-      const url = c.image_url || "https://placehold.co/600x400";
-      return `<img src="${escapeHtml(url)}" style="max-width:100%;max-height:100%;border-radius:${r}px;object-fit:cover" alt="${label}">`;
+      const url = values.image_url || "https://placehold.co/600x400";
+      const fit = values.fit || "cover";
+      const alt = escapeHtml(values.alt || label);
+      return `<img src="${escapeHtml(url)}" style="width:100%;height:100%;max-width:100%;max-height:100%;border-radius:${r}px;object-fit:${fit}" alt="${alt}">`;
     } else {
       // Fallback: Card or Container
-      return `<div style="background:${bg};border-radius:${r}px;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${fg};font-size:12px;padding:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.1)">${label}</div>`;
+      return `<div style="background:${bg};border-radius:${r}px;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${fg};font-size:${fontSize}px;font-weight:${fontWeight};padding:${padding}px;box-shadow:${shadow};border:1px solid ${border};text-align:center">${label}</div>`;
     }
+  }
+
+  function getSchemaProp(component, prop) {
+    return component.property_schema && typeof component.property_schema === "object"
+      ? component.property_schema[prop]
+      : null;
+  }
+
+  function readCustomizationInput(component, prop, target) {
+    const schemaProp = getSchemaProp(component, prop);
+    if (schemaProp?.type === "number") return parseInt(target.value, 10);
+    if (schemaProp?.type === "boolean") return target.checked;
+    return target.value;
+  }
+
+  function updateCustomizationValue(root, target) {
+    const compId = target.dataset.comp;
+    const prop = target.dataset.prop;
+    if (!compId || !prop) return false;
+
+    const comp = components.find((c) => c.id === compId);
+    if (!comp) return false;
+
+    const cust = getCustomization(comp);
+    cust[prop] = readCustomizationInput(comp, prop, target);
+
+    const preview = root.querySelector(`[data-component-wrapper="${compId}"] .bf-card-preview`);
+    if (preview) preview.innerHTML = renderPreview(comp, cust);
+
+    const schemaProp = getSchemaProp(comp, prop);
+    if (schemaProp?.type === "number") {
+      const lbl = target.closest(".bf-field")?.querySelector(".bf-field-value");
+      if (lbl) lbl.textContent = cust[prop];
+    }
+    if (schemaProp?.type === "color") {
+      const hex = target.closest(".bf-color-field")?.querySelector(".bf-color-field-hex");
+      if (hex) hex.textContent = String(cust[prop]).toUpperCase();
+    }
+    if (isPinned(compId)) refreshQuickBar();
+    return true;
   }
 
   function getPreviewClass(c) {
@@ -1164,6 +1340,7 @@
       { label: "Contrast",    color: activeTheme.primaryContrast },
       { label: "Text",        color: activeTheme.text },
       { label: "Surface",     color: activeTheme.surface },
+      { label: "Border",      color: activeTheme.border },
       { label: "Danger",      color: activeTheme.destructive },
       { label: "Success",     color: activeTheme.success },
       { label: "Alert",       color: activeTheme.alert },
@@ -1178,12 +1355,46 @@
     return `
       <div class="bf-section-head"><h1>Developer Tools</h1></div>
 
+      <div class="bf-tool-card" style="margin-bottom:16px; border-color:#1E6DF6;">
+        <h2 style="color:#1E6DF6;">Element Definition Importer</h2>
+        <p>Use this when BubbleForge is missing a base element type. Create one clean element in Bubble, copy it, then save it here as a reusable compiler definition.</p>
+        <div style="margin-top:10px;">
+          <input type="text" id="bf-element-name" class="bf-search" placeholder="Definition Name (e.g. Text, Image, Group)" style="margin-bottom:8px">
+          <select id="bf-element-type" class="bf-search" style="margin-bottom:8px">
+            <option value="Text">Text</option>
+            <option value="Image">Image</option>
+            <option value="Group">Group / Card</option>
+            <option value="Button">Button</option>
+            <option value="Input">Input</option>
+          </select>
+          <select id="bf-element-cat" class="bf-search" style="margin-bottom:8px">
+            <option value="Text">Text</option>
+            <option value="Images">Images</option>
+            <option value="Cards">Cards</option>
+            <option value="Containers">Containers</option>
+            <option value="Buttons">Buttons</option>
+            <option value="Forms">Forms</option>
+          </select>
+          <textarea id="bf-element-desc" class="bf-search" placeholder="Description (optional)" style="margin-bottom:8px;resize:vertical;min-height:40px"></textarea>
+          <button class="bf-btn-primary" type="button" data-action="element-import" style="width:100%;background:#1E6DF6;color:#fff">Save Element Definition</button>
+        </div>
+      </div>
+
       <div class="bf-tool-card" style="margin-bottom:16px; border-color:#FF9900;">
         <h2 style="color:#FF9900;">Component Importer</h2>
         <p>Copy any element in the Bubble Editor, fill in the details below, and click Import to instantly add it to your BubbleForge catalog.</p>
         <div style="margin-top:10px;">
           <input type="text" id="bf-import-name" class="bf-search" placeholder="Component Name (e.g. Clean Pricing Table)" style="margin-bottom:8px">
-          <input type="text" id="bf-import-cat" class="bf-search" placeholder="Category (e.g. Marketing)" style="margin-bottom:8px">
+          <input type="text" id="bf-import-cat" class="bf-search" list="bf-import-categories" placeholder="Category (Buttons, Text, Images, Cards, Containers)" style="margin-bottom:8px">
+          <datalist id="bf-import-categories">
+            <option value="Buttons"></option>
+            <option value="Text"></option>
+            <option value="Images"></option>
+            <option value="Cards"></option>
+            <option value="Containers"></option>
+            <option value="Navigation"></option>
+            <option value="Forms"></option>
+          </datalist>
           <textarea id="bf-import-desc" class="bf-search" placeholder="Description (optional)" style="margin-bottom:8px;resize:vertical;min-height:40px"></textarea>
           <button class="bf-btn-primary" type="button" data-action="comp-import" style="width:100%;background:#FF9900;color:#000">⬇️ Import from Clipboard</button>
         </div>
@@ -1244,6 +1455,9 @@
       if (action) {
         if (action.dataset.action === "close") closePanel();
         if (action.dataset.action === "read-ls") refresh();
+        if (action.dataset.action === "element-import") {
+          runElementDefinitionImport(action);
+        }
         if (action.dataset.action === "refresh-theme") {
           extractAppTheme();
           // Reset all cached customizations so they pick up the new theme
@@ -1291,20 +1505,7 @@
     root.addEventListener("input", (e) => {
       const search = e.target.closest("#bf-search");
       if (search) { searchQuery = search.value; updateMainOnly(); return; }
-      const compId = e.target.dataset.comp, prop = e.target.dataset.prop;
-      if (compId && prop) {
-        const comp = components.find((c) => c.id === compId);
-        if (!comp) return;
-        const cust = getCustomization(comp);
-        cust[prop] = prop === "radius" ? parseInt(e.target.value, 10) : e.target.value;
-        // Live preview
-        const preview = root.querySelector(`[data-component-wrapper="${compId}"] .bf-card-preview`);
-        if (preview) preview.innerHTML = renderPreview(comp, cust);
-        if (prop === "radius") { const lbl = root.querySelector(`#bf-radius-${compId}`)?.closest(".bf-field")?.querySelector(".bf-field-value"); if (lbl) lbl.textContent = `${cust.radius}px`; }
-        if (prop === "bgcolor") { const hex = root.querySelector(`#bf-bg-${compId}`)?.closest(".bf-color-field")?.querySelector(".bf-color-field-hex"); if (hex) hex.textContent = cust.bgcolor.toUpperCase(); }
-        if (prop === "fgcolor") { const hex = root.querySelector(`#bf-fg-${compId}`)?.closest(".bf-color-field")?.querySelector(".bf-color-field-hex"); if (hex) hex.textContent = cust.fgcolor.toUpperCase(); }
-        if (isPinned(compId)) refreshQuickBar();
-      }
+      if (updateCustomizationValue(root, e.target)) return;
       // Styleset color pickers
       const ssColor = e.target.dataset.ssColor;
       if (ssColor && e.target.type === "color") {
@@ -1323,6 +1524,10 @@
       if (ssCheck && e.target.type === "checkbox") {
         stylesetSelected[ssCheck] = e.target.checked;
       }
+    });
+
+    root.addEventListener("change", (e) => {
+      if (updateCustomizationValue(root, e.target)) return;
     });
 
     // Removed drag listeners
@@ -1355,7 +1560,7 @@
   /* ── Copy ───────────────────────────────────────── */
   async function copyComponent(component) {
     try {
-      const c = getCustomization(component);
+      const c = resolveCustomizationValues(getCustomization(component));
 
       const res = await fetch(`http://localhost:8081/api/v1/components/${component.id}/compile`, {
         method: "POST",

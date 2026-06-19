@@ -7,10 +7,12 @@
 bin/
 coverage.out
 *.test
+backend/seed-*
 
 # Repo-local Go caches used in this workspace
 .cache/
 .go/
+.gocache/
 
 # Node / frontend
 node_modules/

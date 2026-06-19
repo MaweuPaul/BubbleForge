@@ -8,6 +8,7 @@ import (
 	"github.com/MaweuPaul/BubbleForge/backend/internal/compiler"
 	"github.com/MaweuPaul/BubbleForge/backend/internal/theme"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -29,10 +30,20 @@ type Component struct {
 	TemplateID     *string        `json:"template_id,omitempty"`
 	PropertyValues map[string]any `json:"property_values,omitempty"`
 	PropertySchema any            `json:"property_schema,omitempty"`
+	ElementID      *string        `json:"element_definition_id,omitempty"`
+	Source         string         `json:"source,omitempty"`
 }
 
 func (h *ComponentsHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
+
+	if comp, ok, err := h.getPresetComponent(c, id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query preset: " + err.Error()})
+		return
+	} else if ok {
+		c.JSON(http.StatusOK, comp)
+		return
+	}
 
 	var comp Component
 	var propValsBytes []byte
@@ -52,15 +63,23 @@ func (h *ComponentsHandler) GetByID(c *gin.Context) {
 	if propValsBytes != nil {
 		_ = json.Unmarshal(propValsBytes, &comp.PropertyValues)
 	}
+	comp.Source = "component"
 
 	c.JSON(http.StatusOK, comp)
 }
 
 func (h *ComponentsHandler) List(c *gin.Context) {
+	comps, err := h.listPresetComponents(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query presets: " + err.Error()})
+		return
+	}
+
 	rows, err := h.DB.Query(c.Request.Context(), `
 		SELECT c.id, c.category, c.name, c.description, c.access, c.template_id, c.property_values, t.property_schema 
 		FROM components c 
 		LEFT JOIN component_templates t ON c.template_id = t.id 
+		WHERE c.id NOT LIKE 'comp-button-%'
 		ORDER BY c.created_at ASC
 	`)
 	if err != nil {
@@ -69,7 +88,6 @@ func (h *ComponentsHandler) List(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var comps []Component
 	for rows.Next() {
 		var comp Component
 		var propValsBytes []byte
@@ -80,6 +98,7 @@ func (h *ComponentsHandler) List(c *gin.Context) {
 		if propValsBytes != nil {
 			_ = json.Unmarshal(propValsBytes, &comp.PropertyValues)
 		}
+		comp.Source = "component"
 		comps = append(comps, comp)
 	}
 
@@ -162,6 +181,10 @@ func (h *ComponentsHandler) Update(c *gin.Context) {
 
 func (h *ComponentsHandler) Compile(c *gin.Context) {
 	id := c.Param("id")
+
+	if ok := h.compilePreset(c, id); ok {
+		return
+	}
 
 	// 1. Load component property_values and template_id
 	var templateID *string
@@ -288,4 +311,142 @@ func (h *ComponentsHandler) Compile(c *gin.Context) {
 
 	// 6. Return compiled Bubble JSON
 	c.JSON(http.StatusOK, output.BubbleJSON)
+}
+
+func (h *ComponentsHandler) getPresetComponent(c *gin.Context, id string) (Component, bool, error) {
+	var comp Component
+	var propValsBytes []byte
+	var schemaBytes []byte
+	var elementID string
+	err := h.DB.QueryRow(c.Request.Context(), `
+		SELECT p.id, p.category, p.name, p.description, p.access, p.property_values, e.property_schema, e.id
+		FROM component_presets p
+		JOIN element_definitions e ON e.id = p.element_definition_id
+		WHERE p.id = $1 AND p.status = 'published'
+	`, id).Scan(&comp.ID, &comp.Category, &comp.Name, &comp.Description, &comp.Access, &propValsBytes, &schemaBytes, &elementID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return Component{}, false, nil
+		}
+		return Component{}, false, err
+	}
+	if propValsBytes != nil {
+		_ = json.Unmarshal(propValsBytes, &comp.PropertyValues)
+	}
+	if schemaBytes != nil {
+		var schema map[string]any
+		_ = json.Unmarshal(schemaBytes, &schema)
+		comp.PropertySchema = schema
+	}
+	comp.ElementID = &elementID
+	comp.Source = "preset"
+	return comp, true, nil
+}
+
+func (h *ComponentsHandler) listPresetComponents(c *gin.Context) ([]Component, error) {
+	rows, err := h.DB.Query(c.Request.Context(), `
+		SELECT p.id, p.category, p.name, p.description, p.access, p.property_values, e.property_schema, e.id
+		FROM component_presets p
+		JOIN element_definitions e ON e.id = p.element_definition_id
+		WHERE p.status = 'published' AND e.status = 'published'
+		ORDER BY p.created_at ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comps []Component
+	for rows.Next() {
+		var comp Component
+		var propValsBytes []byte
+		var schemaBytes []byte
+		var elementID string
+		if err := rows.Scan(&comp.ID, &comp.Category, &comp.Name, &comp.Description, &comp.Access, &propValsBytes, &schemaBytes, &elementID); err != nil {
+			return nil, err
+		}
+		if propValsBytes != nil {
+			_ = json.Unmarshal(propValsBytes, &comp.PropertyValues)
+		}
+		if schemaBytes != nil {
+			var schema map[string]any
+			_ = json.Unmarshal(schemaBytes, &schema)
+			comp.PropertySchema = schema
+		}
+		comp.ElementID = &elementID
+		comp.Source = "preset"
+		comps = append(comps, comp)
+	}
+	return comps, rows.Err()
+}
+
+func (h *ComponentsHandler) compilePreset(c *gin.Context, id string) bool {
+	var propValsBytes []byte
+	var baseJSONBytes []byte
+	err := h.DB.QueryRow(c.Request.Context(), `
+		SELECT p.property_values, e.base_json
+		FROM component_presets p
+		JOIN element_definitions e ON e.id = p.element_definition_id
+		WHERE p.id = $1 AND p.status = 'published' AND e.status = 'published'
+	`, id).Scan(&propValsBytes, &baseJSONBytes)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load preset: " + err.Error()})
+		return true
+	}
+
+	propertyValues := map[string]any{}
+	if propValsBytes != nil {
+		_ = json.Unmarshal(propValsBytes, &propertyValues)
+	}
+
+	var req struct {
+		PropertyValues map[string]any `json:"property_values"`
+	}
+	if err := c.ShouldBindJSON(&req); err == nil && req.PropertyValues != nil {
+		for k, v := range req.PropertyValues {
+			propertyValues[k] = v
+		}
+	}
+
+	var baseJSON map[string]any
+	if err := json.Unmarshal(baseJSONBytes, &baseJSON); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse element definition base JSON"})
+		return true
+	}
+
+	brandTokens := h.loadBrandTokens(c)
+	output, err := compiler.Compile(compiler.CompileInput{
+		Template:       compiler.ComponentTemplate{BaseJSON: baseJSON},
+		PropertyValues: propertyValues,
+		BrandTokens:    brandTokens,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Compilation failed: " + err.Error()})
+		return true
+	}
+
+	c.JSON(http.StatusOK, output.BubbleJSON)
+	return true
+}
+
+func (h *ComponentsHandler) loadBrandTokens(c *gin.Context) map[string]string {
+	brandTokens := theme.CompilerTokenMap(theme.DefaultValues())
+
+	var pColor, sColor, tColor, bColor, font string
+	var radius int
+	err := h.DB.QueryRow(c.Request.Context(),
+		"SELECT primary_color, secondary_color, text_color, background_color, border_radius, font_family FROM brand_tokens LIMIT 1",
+	).Scan(&pColor, &sColor, &tColor, &bColor, &radius, &font)
+	if err == nil {
+		brandTokens["PRIMARY_COLOR"] = pColor
+		brandTokens["SECONDARY_COLOR"] = sColor
+		brandTokens["TEXT_COLOR"] = tColor
+		brandTokens["BACKGROUND_COLOR"] = bColor
+		brandTokens["RADIUS"] = fmt.Sprintf("%d", radius)
+		brandTokens["FONT_FAMILY"] = font
+	}
+	return brandTokens
 }

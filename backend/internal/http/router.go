@@ -54,6 +54,7 @@ func NewRouter(deps RouterDeps) *gin.Engine {
 		api.GET("/templates/:id", templates.GetByID)
 		api.POST("/templates", templates.Create)
 		api.POST("/templates/import", templates.Import)
+		api.POST("/element-definitions/import", templates.ImportElementDefinition)
 	}
 
 	return router
