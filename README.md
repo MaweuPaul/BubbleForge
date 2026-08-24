@@ -2,6 +2,14 @@
 
 BubbleForge is a Bubble-native component platform.
 
+## The Problem
+
+Bubble has no official way to import or reuse polished components. Bubble also does not document its internal element JSON format. In practice this means builders hand-assemble every button, card, and form from primitive elements inside the visual editor, every time, in every app, with no supported way to package and reinsert a finished result.
+
+## What BubbleForge Solves
+
+BubbleForge lets a builder pick a pre-built, typed component and paste a finished, correctly structured element straight onto their Bubble canvas, instead of hand-building it from primitives. A compiler turns typed property values (colors, sizing, text) into valid Bubble element JSON with fresh element IDs, and a Chrome extension delivers it through Bubble's own clipboard so insertion works with a native Ctrl+V, no drag/drop or unsupported API required.
+
 The goal is to help Bubble builders browse, customize, compile, and paste high-quality components directly into the Bubble editor. If a component already exists, users should be able to use it immediately. If it does not exist, BubbleForge should eventually generate it with AI and compile it into safe Bubble-compatible JSON.
 
 ```text
