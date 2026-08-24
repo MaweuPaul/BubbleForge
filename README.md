@@ -45,13 +45,16 @@ Drag/drop was tested and is not the supported path right now. Bubble's editor re
 - [x] Fresh Bubble element IDs can be generated at copy time
 - [x] Unsafe Bubble fields can be stripped before paste
 - [x] AI should generate typed component data, not arbitrary raw Bubble JSON
+- [x] Atom-based property registry (text, link, image, shape, group atoms with categories)
+- [x] Element ID tokenization remaps `current_parent` across nested groups at template-authoring time
 
 ## Next Major Milestones
 
+- [ ] Wire tokenized multi-element templates into the paste-time `Compile()` path (template authoring already tokenizes nested groups; the compile step still generates IDs for single-element templates only)
 - [ ] BubbleForge Styleset Importer
 - [ ] Style recorder/probe for discovering Bubble editor style APIs
 - [ ] Style-backed compiler mode
-- [ ] Multi-element atom composition
+- [ ] Multi-element atom composition end to end (author → compile → paste)
 - [ ] Component versioning
 - [ ] AI component generation on top of the compiler
 - [ ] BYOK provider storage and encryption
