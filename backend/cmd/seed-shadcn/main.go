@@ -76,14 +76,26 @@ func main() {
 		"radius": {"type": "number", "label": "Radius", "default": 6, "description": "Controls Bubble's 'border_roundness' property."}
 	}`
 
+	rulesStr := `{
+		"layout": {
+			"height_mode": "fixed",
+			"enforce_fixed_height": true,
+			"description": "Buttons must compile with fit_height=false and single_height=true so Bubble keeps the explicit numeric height."
+		},
+		"compiler": {
+			"required_properties": ["height"],
+			"preserve_numeric_properties": ["height", "width", "border_roundness", "font_size"]
+		}
+	}`
+
 	var baseJSON map[string]any
 	json.Unmarshal([]byte(baseJSONStr), &baseJSON)
 
 	_, err = pool.Exec(ctx, `
-		INSERT INTO component_templates (id, component_type_id, name, slug, base_json, property_schema, status)
-		VALUES ($1, 'type_button', 'Shadcn Master Button', 'shadcn-master-button', $2, $3, 'published')
-		ON CONFLICT (slug) DO UPDATE SET base_json = EXCLUDED.base_json, property_schema = EXCLUDED.property_schema
-	`, templateID, baseJSON, schemaStr)
+		INSERT INTO component_templates (id, component_type_id, name, slug, base_json, property_schema, rules_json, status)
+		VALUES ($1, 'type_button', 'Shadcn Master Button', 'shadcn-master-button', $2, $3, $4, 'published')
+		ON CONFLICT (slug) DO UPDATE SET base_json = EXCLUDED.base_json, property_schema = EXCLUDED.property_schema, rules_json = EXCLUDED.rules_json
+	`, templateID, baseJSON, schemaStr, rulesStr)
 	if err != nil {
 		log.Fatalf("Failed to insert template: %v", err)
 	}
@@ -179,7 +191,7 @@ func main() {
 		propsJSON, _ := json.Marshal(v.props)
 		_, err := pool.Exec(ctx, `
 			INSERT INTO components (id, category, name, description, access, template_id, property_values)
-			VALUES ($1, 'Button', $2, $3, 'Free', $4, $5)
+			VALUES ($1, 'Buttons', $2, $3, 'Free', $4, $5)
 			ON CONFLICT (id) DO UPDATE SET 
 				name = EXCLUDED.name,
 				description = EXCLUDED.description,

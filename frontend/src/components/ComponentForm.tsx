@@ -248,8 +248,26 @@ export default function ComponentForm({ initialData, isEdit }: Props) {
           <label htmlFor="template_id" className={styles.label}>Template (Compiler Base)</label>
           <select id="template_id" name="template_id" value={formData.template_id} onChange={handleChange}>
             <option value="">-- Legacy Raw JSON (No Template) --</option>
-            {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.type})</option>)}
+            {templates.map(t => (
+              <option key={t.id} value={t.id}>
+                {t.type === 'group' ? '🧩 ' : ''}{t.name} ({t.type})
+              </option>
+            ))}
           </select>
+          {/* Composite info banner */}
+          {formData.template_id && templates.find(t => t.id === formData.template_id)?.type === 'group' && (
+            <div style={{
+              marginTop: '8px', padding: '8px 12px',
+              background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.3)',
+              borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px',
+            }}>
+              <span style={{ fontSize: '14px' }}>🧩</span>
+              <span style={{ fontSize: '12px', color: '#7C3AED', fontWeight: 600 }}>Composite Template</span>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                — Group + children. Tokens cover card background, title, body, and button independently.
+              </span>
+            </div>
+          )}
         </div>
 
         {!formData.template_id && (
@@ -283,7 +301,7 @@ export default function ComponentForm({ initialData, isEdit }: Props) {
                     {key.replace(/_/g, ' ')}
                   </label>
                   
-                  {s.type === 'string' && (
+                  {(s.type === 'string' || s.type === 'text') && (
                     <input
                       type="text" id={`prop_${key}`}
                       value={val} onChange={(e) => handlePropChange(key, e.target.value, s.type)}

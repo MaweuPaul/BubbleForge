@@ -9,8 +9,10 @@
   const LS_QBAR_POS = "bubbleforge_qbar_pos";
   const LS_REOPEN_POS = "bubbleforge_reopen_pos";
   const LS_THEME    = "bubbleforge_active_theme";
+  const LS_THEME_IMPORTED = "bubbleforge_theme_imported";
   const MAX_PINS    = 8;
   let components    = [];
+  let templates     = [];
 
   function safeAppend(el) {
     if (document.body) {
@@ -70,11 +72,14 @@
       if (extracted.primary && extracted.primary !== "#" && extracted.primary !== "#000000") {
         Object.assign(activeTheme, extracted);
         try { localStorage.setItem(LS_THEME, JSON.stringify(activeTheme)); } catch (_) {}
+        try { localStorage.setItem(LS_THEME_IMPORTED, "true"); } catch (_) {}
         console.log("[BubbleForge] App theme extracted:", activeTheme);
+        return true;
       }
     } catch (e) {
       console.warn("[BubbleForge] Theme extraction failed:", e);
     }
+    return false;
   }
 
   // Convert any color value to a hex string safe for <input type="color">
@@ -156,24 +161,18 @@
   }
 
   // ── STRICT EDITOR-ONLY GUARD ──────────────────────
-  // Bubble's editor lives on bubble.io at paths like:
-  //   /page?name=myapp&id=...
-  //   /editor?name=myapp
-  //   /builder/...
-  // Live apps run on *.bubbleapps.io or custom domains — we never inject there.
-  // We also never inject into iframes (Intercom, analytics, etc.).
   const _host   = window.location.hostname;
   const _path   = window.location.pathname;
   const _search = window.location.search;
 
   const isBubbleEditor =
-    window === window.top &&                        // top-level frame only
-    _host === "bubble.io" &&                        // bubble.io domain only
+    window === window.top &&                        
+    _host === "bubble.io" &&                        
     (
-      _path.startsWith("/page")    ||              // /page?name=... (main editor)
-      _path.startsWith("/editor")  ||              // /editor?name=...
-      _path.startsWith("/builder") ||              // /builder/...
-      _search.includes("name=")                    // any bubble.io page with ?name= (editor tabs)
+      _path.startsWith("/page")    ||              
+      _path.startsWith("/editor")  ||              
+      _path.startsWith("/builder") ||              
+      _search.includes("name=")                    
     );
 
   if (!isBubbleEditor) return;
@@ -187,6 +186,10 @@
   let recorderLog = "Waiting to record...";
   let csrfScanResult = "Not scanned yet.";
   const customizations = {};
+  
+  // Wizard state
+  let wizardSelectedTemplateId = null;
+  let wizardCustomizations = {};
 
   // ── Styleset Importer state ───────────────────────
   let stylesetStep = 1;
@@ -219,6 +222,10 @@
     const savedTheme = localStorage.getItem(LS_THEME);
     if (savedTheme) Object.assign(activeTheme, JSON.parse(savedTheme));
   } catch (_) {}
+  let themeImported = false;
+  try {
+    themeImported = localStorage.getItem(LS_THEME_IMPORTED) === "true";
+  } catch (_) {}
 
   let pinnedIds = [];
   try {
@@ -242,7 +249,6 @@
   }
 
   function togglePin(id) {
-    // Re-sync with localStorage to prevent any stale array state
     try {
       const saved = localStorage.getItem(LS_PINS);
       pinnedIds = saved ? JSON.parse(saved) : [];
@@ -279,7 +285,6 @@
         c[key] = prop.default;
       }
     } else {
-      // Fallback for legacy components without schema
       c.label = component.name;
       c.bgcolor = activeTheme.primary;
       c.fgcolor = activeTheme.primaryContrast;
@@ -293,14 +298,10 @@
 
   if (document.getElementById(ROOT_ID)) return;
 
-  // ── STARTUP: Only show Quick Bar + reopen button ──
-  // Panel is CLOSED by default — user opens it on demand
-  extractAppTheme();  // Phase 1: read the Bubble app's design system from the DOM
   injectQuickBar();
   showReopenButton();
   injectProbes();
 
-  // Fetch components dynamically from the backend
   function fetchComponents() {
     fetch("http://localhost:8081/api/v1/components")
       .then((r) => r.json())
@@ -317,11 +318,124 @@
   }
   fetchComponents();
 
+  function fetchTemplates() {
+    fetch("http://localhost:8081/api/v1/templates")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          templates = data;
+          if (activeTab === "+ New") refresh();
+        }
+      })
+      .catch((err) => console.error("[BubbleForge] Failed to fetch templates.", err));
+  }
+  fetchTemplates();
+
+  function getPreviewClass(component) {
+    const name = component.name || "";
+    if (name.includes("Light")) return "theme-light";
+    if (name.includes("Dark")) return "theme-dark";
+    if (name.includes("Glass")) return "theme-glass";
+    return "";
+  }
+
+  function renderAddComponent() {
+    const catOptions = ["Buttons", "Text", "Images", "Cards", "Containers", "Inputs", "Icons", "Navigation", "Tables", "Other"];
+    const tmplOptions = templates.map(t => `<option value="${t.id}" ${wizardSelectedTemplateId === t.id ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join("");
+    
+    let templateFields = "";
+    if (wizardSelectedTemplateId) {
+      const template = templates.find(t => t.id === wizardSelectedTemplateId);
+      if (template) {
+        templateFields = renderCustomizePanel({id: 'wizard', property_schema: template.property_schema}, wizardCustomizations, true);
+      }
+    }
+
+    return `
+      <div class="bf-section-head"><h1>Create New Component</h1></div>
+      <div class="bf-tool-card" style="margin-bottom:16px;">
+        <div style="margin-top:10px;">
+          <select id="bf-wizard-template" class="bf-search" style="margin-bottom:16px" data-action="wizard-select-template">
+            <option value="">-- Select a Master Template --</option>
+            ${tmplOptions}
+          </select>
+
+          <input type="text" id="bf-wizard-name" class="bf-search" placeholder="Component Name (e.g. Hero Primary Button)" style="margin-bottom:8px">
+          
+          <select id="bf-wizard-cat" class="bf-search" style="margin-bottom:8px">
+            <option value="">-- Select Category --</option>
+            ${catOptions.map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join("")}
+          </select>
+          
+          <textarea id="bf-wizard-desc" class="bf-search" placeholder="Description (optional)" style="margin-bottom:16px;resize:vertical;min-height:60px"></textarea>
+          
+          ${templateFields ? `
+            <div style="margin-bottom: 16px;">
+              <h3 style="font-size: 13px; margin-bottom: 8px; color: #f8fafc;">Atom Values</h3>
+              ${templateFields}
+            </div>
+          ` : ''}
+
+          <button class="bf-btn-primary" type="button" data-action="wizard-save" style="width:100%;background:#1E6DF6;color:#fff" ${!wizardSelectedTemplateId ? 'disabled' : ''}>Save Component</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function runWizardSave(btn) {
+    const name = document.getElementById("bf-wizard-name")?.value.trim();
+    const cat = document.getElementById("bf-wizard-cat")?.value.trim();
+    const desc = document.getElementById("bf-wizard-desc")?.value.trim();
+    
+    if (!wizardSelectedTemplateId || !name || !cat) {
+      return showToast("Template, Name, and Category are required!");
+    }
+
+    const originalText = btn.textContent;
+    btn.textContent = "Saving...";
+    btn.style.opacity = "0.6";
+    btn.style.pointerEvents = "none";
+
+    try {
+      const resp = await fetch("http://localhost:8081/api/v1/components", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: "comp-" + Date.now(),
+          name,
+          category: cat,
+          description: desc,
+          template_id: wizardSelectedTemplateId,
+          property_values: wizardCustomizations,
+          access: "Free"
+        })
+      });
+
+      if (!resp.ok) throw new Error(await resp.text());
+      showToast("✅ Component created successfully!");
+      
+      wizardSelectedTemplateId = null;
+      wizardCustomizations = {};
+      
+      activeTab = "Components";
+      activeCategory = "All";
+      fetchComponents(); 
+    } catch (e) {
+      console.error(e);
+      showToast("❌ Creation failed: " + e.message);
+    } finally {
+      btn.textContent = originalText;
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+    }
+  }
+
+
   async function runComponentImport(btn) {
     const name = document.getElementById("bf-import-name")?.value.trim();
     const cat = document.getElementById("bf-import-cat")?.value.trim();
     const desc = document.getElementById("bf-import-desc")?.value.trim();
-    if (!name || !cat) return showToast("Name and Category are required!");
+    if (!name || !cat) return showToast("Name and Category are required.");
 
     const originalText = btn.textContent;
     btn.textContent = "Reading clipboard...";
@@ -331,7 +445,7 @@
     try {
       const text = await navigator.clipboard.readText();
       const rawJson = JSON.parse(text);
-      
+
       btn.textContent = "Importing...";
       const resp = await fetch("http://localhost:8081/api/v1/templates/import", {
         method: "POST",
@@ -340,17 +454,19 @@
       });
 
       if (!resp.ok) throw new Error(await resp.text());
-      showToast("✅ Component imported successfully!");
+      showToast("Component imported.");
       activeTab = "Components";
       activeCategory = "All";
-      fetchComponents(); // Refresh the list!
-      
-      // Clear form
-      if (document.getElementById("bf-import-name")) document.getElementById("bf-import-name").value = "";
-      if (document.getElementById("bf-import-desc")) document.getElementById("bf-import-desc").value = "";
+      fetchTemplates();
+      fetchComponents();
+
+      const nameInput = document.getElementById("bf-import-name");
+      const descInput = document.getElementById("bf-import-desc");
+      if (nameInput) nameInput.value = "";
+      if (descInput) descInput.value = "";
     } catch (e) {
       console.error(e);
-      showToast("❌ Import failed: " + e.message);
+      showToast("Import failed: " + e.message);
     } finally {
       btn.textContent = originalText;
       btn.style.opacity = "1";
@@ -374,7 +490,7 @@
       const text = await navigator.clipboard.readText();
       const rawJson = JSON.parse(text);
 
-      btn.textContent = "Saving definition...";
+      btn.textContent = "Saving template...";
       const resp = await fetch("http://localhost:8081/api/v1/element-definitions/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -388,16 +504,19 @@
       });
 
       if (!resp.ok) throw new Error(await resp.text());
-      showToast("Element definition saved. Starter preset added.");
+      showToast("Master template saved.");
       activeTab = "Components";
       activeCategory = cat;
+      fetchTemplates();
       fetchComponents();
 
-      if (document.getElementById("bf-element-name")) document.getElementById("bf-element-name").value = "";
-      if (document.getElementById("bf-element-desc")) document.getElementById("bf-element-desc").value = "";
+      const nameInput = document.getElementById("bf-element-name");
+      const descInput = document.getElementById("bf-element-desc");
+      if (nameInput) nameInput.value = "";
+      if (descInput) descInput.value = "";
     } catch (e) {
       console.error(e);
-      showToast("Element import failed: " + e.message);
+      showToast("Template import failed: " + e.message);
     } finally {
       btn.textContent = originalText;
       btn.style.opacity = "1";
@@ -405,8 +524,60 @@
     }
   }
 
-  document.addEventListener("drop", handleDocumentDrop, true);
-  window.addEventListener("message", handleWindowMessage);
+  async function runCaptureComposite(btn) {
+    const name = document.getElementById("bf-composite-name")?.value.trim();
+    const cat  = document.getElementById("bf-composite-cat")?.value.trim();
+    const desc = document.getElementById("bf-composite-desc")?.value.trim();
+
+    if (!name || !cat) return showToast("Name and Category are required.");
+
+    const originalText = btn.textContent;
+    btn.textContent = "Reading clipboard…";
+    btn.style.opacity = "0.6";
+    btn.style.pointerEvents = "none";
+
+    try {
+      // Read Bubble's clipboard directly from localStorage — no clipboard API needed.
+      const raw = localStorage.getItem("bubble_element_clipboard");
+      if (!raw) throw new Error("No element in Bubble clipboard. Copy a Group in Bubble first, then try again.");
+
+      let rawJson;
+      try { rawJson = JSON.parse(raw); } catch (_) { throw new Error("Clipboard JSON is malformed. Copy the element in Bubble again."); }
+
+      btn.textContent = "Saving composite…";
+      const resp = await fetch("http://localhost:8081/api/v1/templates/import-composite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, category: cat, description: desc, raw_bubble_json: rawJson })
+      });
+
+      if (!resp.ok) {
+        const body = await resp.text();
+        throw new Error(body || `Server error (${resp.status})`);
+      }
+
+      showToast(`✅ "${name}" captured — composite template & component created.`);
+
+      const nameEl = document.getElementById("bf-composite-name");
+      const descEl = document.getElementById("bf-composite-desc");
+      if (nameEl) nameEl.value = "";
+      if (descEl) descEl.value = "";
+
+      fetchTemplates();
+      fetchComponents();
+      activeTab = "Components";
+      activeCategory = "All";
+      refresh();
+    } catch (e) {
+      console.error("[BubbleForge] Capture composite failed:", e);
+      showToast("❌ Capture failed: " + e.message);
+    } finally {
+      btn.textContent = originalText;
+      btn.style.opacity = "1";
+      btn.style.pointerEvents = "auto";
+    }
+  }
+
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === "D") {
       activeTab = activeTab === "Tools" ? "Components" : "Tools";
@@ -415,17 +586,11 @@
     }
   });
 
-  /* ══════════════════════════════════════════════════
-     SHARED DRAG-TO-REPOSITION
-  ══════════════════════════════════════════════════ */
   function makeElementDraggable(el, handle, lsKey) {
     let startX, startY, startLeft, startTop;
-
-    // Restore saved position
     try {
       const saved = JSON.parse(localStorage.getItem(lsKey) || "null");
       if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
-        // Clamp to current viewport so dragged-offscreen elements snap back
         const clampedX = Math.max(0, Math.min(window.innerWidth  - (el.offsetWidth  || 100), saved.x));
         const clampedY = Math.max(0, Math.min(window.innerHeight - (el.offsetHeight || 50),  saved.y));
         el.style.left      = clampedX + "px";
@@ -434,7 +599,6 @@
         el.style.bottom    = "auto";
         el.style.transform = "none";
       }
-      // If no saved position: leave CSS defaults (bottom/right) intact
     } catch (_) {}
 
     function onMouseMove(e) {
@@ -467,9 +631,6 @@
     });
   }
 
-  /* ══════════════════════════════════════════════════
-     QUICK BAR
-  ══════════════════════════════════════════════════ */
   function injectQuickBar() {
     const existing = document.getElementById(QUICKBAR_ID);
     if (existing) existing.remove();
@@ -582,9 +743,6 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════
-     MAIN PANEL
-  ══════════════════════════════════════════════════ */
   function injectPanel() {
     removeReopenButton();
     const root = document.createElement("aside");
@@ -623,7 +781,6 @@
       
       if (recorderLog === "Waiting to record...") recorderLog = "";
       recorderLog = msg + "\n" + recorderLog;
-      // keep log bounded
       if (recorderLog.length > 5000) recorderLog = recorderLog.substring(0, 5000) + "...";
       
       const logEl = document.getElementById("bf-recorder-log");
@@ -666,7 +823,6 @@
     }
   }
 
-  /* ── Render ─────────────────────────────────────── */
   function renderPanel() {
     const categories = ["All", ...new Set(components.map((c) => c.category))];
     return `
@@ -681,9 +837,9 @@
 
           <nav class="bf-nav">
             ${renderNavItem("Components", `<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>`)}
+            ${renderNavItem("+ New", `<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>`)}
             ${renderNavItem("Pinned", `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>`, pinnedIds.length > 0 ? pinnedIds.length : null)}
             ${renderNavItem("My Library", `<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>`)}
-            <!-- ${renderNavItem("Styleset", `<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>`)} -->
             ${renderNavItem("Tools", `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 9.36l-7.1 7.1a1 1 0 0 1-1.41 0l-1.42-1.42a1 1 0 0 1 0-1.41l7.1-7.1a6 6 0 0 1 9.36-7.94l-3.77 3.77z"/>`)}
           </nav>
 
@@ -726,7 +882,7 @@
 
   function renderActiveContent() {
     if (activeTab === "Tools") return renderTools();
-    // if (activeTab === "Styleset") return renderStyleset();
+    if (activeTab === "+ New") return renderAddComponent();
 
     if (activeTab === "Pinned") {
       const pinned = pinnedIds.map((id) => components.find((c) => c.id === id)).filter(Boolean);
@@ -803,7 +959,7 @@
       </article>`;
   }
 
-  function renderCustomizePanel(component, c) {
+  function renderCustomizePanel(component, c, isWizard = false) {
     const id = component.id;
     const schema = component.property_schema || {};
     const hasSchema = Object.keys(schema).length > 0;
@@ -813,68 +969,56 @@
     if (!hasSchema) {
       html += `<p style="font-size:12px;color:#94a3b8;padding:8px">No customization schema available for this component.</p>`;
     } else {
-      // We will render fields. To keep it compact, we can just use margin-bottom.
       for (const [key, prop] of Object.entries(schema)) {
         const val = c[key] !== undefined ? c[key] : prop.default;
         const descHtml = prop.description ? `<p style="font-size:11px;color:#94a3b8;margin:4px 0 0 0;line-height:1.3;">${escapeHtml(prop.description)}</p>` : "";
         
         if (prop.type === "color") {
           const hex = toColorInputValue(val);
-          const display = val === "transparent" ? "Transparent" : String(val).startsWith("rgba") ? val : String(val).toUpperCase();
           html += `
-            <div class="bf-field" style="margin-bottom:12px">
-              <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)}</label>
-              <div class="bf-color-field">
-                <input class="bf-field-color" id="bf-${key}-${id}" type="color" value="${hex}" data-prop="${escapeHtml(key)}" data-comp="${id}">
-                <span class="bf-color-field-hex">${escapeHtml(display)}</span>
+            <div class="bf-prop-row">
+              <label class="bf-prop-label">${escapeHtml(prop.label || key)}</label>
+              <div class="bf-prop-input bf-prop-color">
+                <input type="color" value="${hex}" data-component="${isWizard ? 'wizard' : id}" data-key="${key}" title="${escapeHtml(prop.label || key)}">
+                <input type="text" class="bf-color-text" value="${hex}" data-component="${isWizard ? 'wizard' : id}" data-key="${key}">
               </div>
-              ${descHtml}
-            </div>`;
+            </div>
+            ${descHtml}`;
         } else if (prop.type === "number") {
           html += `
-            <div class="bf-field" style="margin-bottom:12px">
-              <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)} <span class="bf-field-value">${escapeHtml(val)}</span></label>
-              <input class="bf-field-range" id="bf-${key}-${id}" type="range" min="${prop.min || 0}" max="${prop.max || 999}" value="${escapeHtml(val)}" data-prop="${escapeHtml(key)}" data-comp="${id}">
-              ${descHtml}
-            </div>`;
-        } else if (prop.type === "select") {
-          const options = Array.isArray(prop.options) ? prop.options : [];
+            <div class="bf-prop-row">
+              <label class="bf-prop-label">${escapeHtml(prop.label || key)}</label>
+              <input class="bf-prop-input" type="number" value="${escapeHtml(val)}" data-component="${isWizard ? 'wizard' : id}" data-key="${key}" ${prop.min!==undefined?`min="${prop.min}"`:''} ${prop.max!==undefined?`max="${prop.max}"`:''}>
+            </div>
+            ${descHtml}`;
+        } else if (prop.type === "select" && Array.isArray(prop.options)) {
           html += `
-            <div class="bf-field" style="margin-bottom:12px">
-              <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)}</label>
-              <select class="bf-field-input" id="bf-${key}-${id}" data-prop="${escapeHtml(key)}" data-comp="${id}">
-                ${options.map((opt) => `<option value="${escapeHtml(opt)}" ${String(opt) === String(val) ? "selected" : ""}>${escapeHtml(opt)}</option>`).join("")}
+            <div class="bf-prop-row">
+              <label class="bf-prop-label">${escapeHtml(prop.label || key)}</label>
+              <select class="bf-prop-input" data-component="${isWizard ? 'wizard' : id}" data-key="${key}">
+                ${prop.options.map(o => `<option value="${escapeHtml(o)}" ${o === val ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}
               </select>
-              ${descHtml}
-            </div>`;
-        } else if (prop.type === "boolean") {
-          html += `
-            <div style="margin-bottom:12px">
-              <label class="bf-field" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:0">
-                <input type="checkbox" ${val ? "checked" : ""} data-prop="${escapeHtml(key)}" data-comp="${id}" style="width:16px;height:16px;accent-color:${activeTheme.primary}">
-                <span class="bf-field-label" style="margin:0">${escapeHtml(prop.label)}</span>
-              </label>
-              ${descHtml}
-            </div>`;
+            </div>
+            ${descHtml}`;
         } else {
-          // text, url, etc.
-          const inputType = prop.type === "url" ? "url" : "text";
           html += `
-            <div class="bf-field" style="margin-bottom:12px">
-              <label class="bf-field-label" for="bf-${key}-${id}">${escapeHtml(prop.label)}</label>
-              <input class="bf-field-input" id="bf-${key}-${id}" type="${inputType}" value="${escapeHtml(val)}" data-prop="${escapeHtml(key)}" data-comp="${id}">
-              ${descHtml}
-            </div>`;
+            <div class="bf-prop-row">
+              <label class="bf-prop-label">${escapeHtml(prop.label || key)}</label>
+              <input class="bf-prop-input" type="text" value="${escapeHtml(val)}" data-component="${isWizard ? 'wizard' : id}" data-key="${key}">
+            </div>
+            ${descHtml}`;
         }
       }
     }
 
-    html += `
+    if (!isWizard) {
+      html += `
         <button class="bf-reset-btn" type="button" data-reset="${escapeHtml(id)}" title="Reset to defaults" style="margin-top:4px">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
           Reset defaults
-        </button>
-      </div>`;
+        </button>`;
+    }
+    html += `</div>`;
     return html;
   }
 
@@ -882,7 +1026,6 @@
     const cat = (component.category || "").toLowerCase();
     const values = resolveCustomizationValues(c);
     
-    // Attempt to extract values from dynamic schema customizations
     const label = escapeHtml(values.label || values.text || component.name);
     const r = values.radius !== undefined ? values.radius : 8;
     const bg = values.bgcolor || activeTheme.primary;
@@ -899,7 +1042,6 @@
     };
     const shadow = shadowMap[values.shadow] || shadowMap.md;
 
-    // Legacy Button specific rendering to keep cool UI
     switch (component.name) {
       case "Outline Button":
         return `<div class="bf-prev-btn" style="background:transparent;color:${fg};border:2px solid ${border || fg};border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight}">${label}</div>`;
@@ -919,7 +1061,6 @@
         return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:999px;padding:0 24px;font-size:${fontSize}px;font-weight:${fontWeight};box-shadow:0 2px 8px rgba(234,88,12,0.3)">${label}</div>`;
     }
 
-    // Dynamic rendering by category
     if (cat.includes("button")) {
       return `<div class="bf-prev-btn" style="background:${bg};color:${fg};border-radius:${r}px;font-size:${fontSize}px;font-weight:${fontWeight};box-shadow:0 2px 8px rgba(0,0,0,0.15)">${label}</div>`;
     } else if (cat.includes("text") || cat.includes("typography")) {
@@ -929,66 +1070,67 @@
       const fit = values.fit || "cover";
       const alt = escapeHtml(values.alt || label);
       return `<img src="${escapeHtml(url)}" style="width:100%;height:100%;max-width:100%;max-height:100%;border-radius:${r}px;object-fit:${fit}" alt="${alt}">`;
+    } else if (values.title !== undefined || values.card_bg !== undefined) {
+      // ── Composite card preview ──────────────────────────────────────────────
+      const cardBg      = values.card_bg || bg || "#ffffff";
+      const cardR       = values.radius !== undefined ? values.radius : 12;
+      const cardBorder  = values.border_color || "#e2e8f0";
+      const titleText   = escapeHtml(values.title || "Card Title");
+      const titleColor  = values.title_color || "#0f172a";
+      const titleSize   = values.title_size || 16;
+      const bodyText    = escapeHtml(values.body || "Supporting text goes here.");
+      const bodyColor   = values.body_color || "#64748b";
+      const bodySize    = values.body_size || 12;
+      const btnLabel    = escapeHtml(values.btn_label || "Get Started");
+      const btnBg       = values.btn_color || "#1E6DF6";
+      const btnR        = values.btn_radius !== undefined ? values.btn_radius : 8;
+      const btnFg       = values.btn_text_color || "#ffffff";
+      const hasShadow   = values.shadow !== "none";
+      const shadowStyle = hasShadow ? "0 4px 16px rgba(15,23,42,0.10)" : "none";
+
+      return `
+        <div style="
+          background:${cardBg};
+          border-radius:${cardR}px;
+          border:1px solid ${cardBorder};
+          box-shadow:${shadowStyle};
+          width:100%; height:100%;
+          display:flex; flex-direction:column; justify-content:space-between;
+          padding:14px 14px 12px;
+          overflow:hidden; box-sizing:border-box;
+        ">
+          <div>
+            <div style="
+              font-size:${titleSize}px; font-weight:700;
+              color:${titleColor}; font-family:${activeTheme.font};
+              line-height:1.25; margin-bottom:6px;
+              overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+            ">${titleText}</div>
+            <div style="
+              font-size:${bodySize}px; color:${bodyColor};
+              font-family:${activeTheme.font}; line-height:1.4;
+              display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+              overflow:hidden;
+            ">${bodyText}</div>
+          </div>
+          <div style="margin-top:10px;">
+            <div style="
+              display:inline-flex; align-items:center; justify-content:center;
+              background:${btnBg}; color:${btnFg};
+              border-radius:${btnR}px;
+              font-size:11px; font-weight:600;
+              padding:5px 14px; font-family:${activeTheme.font};
+              white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis;
+              box-shadow:0 1px 4px rgba(0,0,0,0.18);
+            ">${btnLabel}</div>
+          </div>
+        </div>`;
     } else {
-      // Fallback: Card or Container
       return `<div style="background:${bg};border-radius:${r}px;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:${fg};font-size:${fontSize}px;font-weight:${fontWeight};padding:${padding}px;box-shadow:${shadow};border:1px solid ${border};text-align:center">${label}</div>`;
     }
   }
 
-  function getSchemaProp(component, prop) {
-    return component.property_schema && typeof component.property_schema === "object"
-      ? component.property_schema[prop]
-      : null;
-  }
 
-  function readCustomizationInput(component, prop, target) {
-    const schemaProp = getSchemaProp(component, prop);
-    if (schemaProp?.type === "number") return parseInt(target.value, 10);
-    if (schemaProp?.type === "boolean") return target.checked;
-    return target.value;
-  }
-
-  function updateCustomizationValue(root, target) {
-    const compId = target.dataset.comp;
-    const prop = target.dataset.prop;
-    if (!compId || !prop) return false;
-
-    const comp = components.find((c) => c.id === compId);
-    if (!comp) return false;
-
-    const cust = getCustomization(comp);
-    cust[prop] = readCustomizationInput(comp, prop, target);
-
-    const preview = root.querySelector(`[data-component-wrapper="${compId}"] .bf-card-preview`);
-    if (preview) preview.innerHTML = renderPreview(comp, cust);
-
-    const schemaProp = getSchemaProp(comp, prop);
-    if (schemaProp?.type === "number") {
-      const lbl = target.closest(".bf-field")?.querySelector(".bf-field-value");
-      if (lbl) lbl.textContent = cust[prop];
-    }
-    if (schemaProp?.type === "color") {
-      const hex = target.closest(".bf-color-field")?.querySelector(".bf-color-field-hex");
-      if (hex) hex.textContent = String(cust[prop]).toUpperCase();
-    }
-    if (isPinned(compId)) refreshQuickBar();
-    return true;
-  }
-
-  function getPreviewClass(c) {
-    const map = {
-      "Solid Button":       "preview-solid",
-      "Outline Button":     "preview-outline",
-      "Ghost Button":       "preview-ghost",
-      "Pill Button":        "preview-pill",
-      "Soft Button":        "preview-soft",
-      "Destructive Button": "preview-destructive",
-      "Icon Button":        "preview-icon",
-      "FAB Button":         "preview-fab",
-      "Link Button":        "preview-link",
-    };
-    return map[c.name] || "preview-default";
-  }
 
   /* ══════════════════════════════════════════════════
      STYLESET IMPORTER — Helpers + UI
@@ -1356,8 +1498,8 @@
       <div class="bf-section-head"><h1>Developer Tools</h1></div>
 
       <div class="bf-tool-card" style="margin-bottom:16px; border-color:#1E6DF6;">
-        <h2 style="color:#1E6DF6;">Element Definition Importer</h2>
-        <p>Use this when BubbleForge is missing a base element type. Create one clean element in Bubble, copy it, then save it here as a reusable compiler definition.</p>
+        <h2 style="color:#1E6DF6;">Master Template Importer</h2>
+        <p>Use this when BubbleForge is missing a base element type. Create one clean element in Bubble, copy it, then save it as a reusable master template with a starter component.</p>
         <div style="margin-top:10px;">
           <input type="text" id="bf-element-name" class="bf-search" placeholder="Definition Name (e.g. Text, Image, Group)" style="margin-bottom:8px">
           <select id="bf-element-type" class="bf-search" style="margin-bottom:8px">
@@ -1368,15 +1510,35 @@
             <option value="Input">Input</option>
           </select>
           <select id="bf-element-cat" class="bf-search" style="margin-bottom:8px">
-            <option value="Text">Text</option>
-            <option value="Images">Images</option>
-            <option value="Cards">Cards</option>
-            <option value="Containers">Containers</option>
-            <option value="Buttons">Buttons</option>
-            <option value="Forms">Forms</option>
+            <option value="text">Text</option>
+            <option value="images">Images</option>
+            <option value="cards">Cards</option>
+            <option value="containers">Containers</option>
+            <option value="buttons">Buttons</option>
+            <option value="inputs">Forms / Inputs</option>
           </select>
           <textarea id="bf-element-desc" class="bf-search" placeholder="Description (optional)" style="margin-bottom:8px;resize:vertical;min-height:40px"></textarea>
-          <button class="bf-btn-primary" type="button" data-action="element-import" style="width:100%;background:#1E6DF6;color:#fff">Save Element Definition</button>
+          <button class="bf-btn-primary" type="button" data-action="element-import" style="width:100%;background:#1E6DF6;color:#fff">Save Master Template</button>
+        </div>
+      </div>
+
+      <div class="bf-tool-card" style="margin-bottom:16px; border-color:#7C3AED;">
+        <h2 style="color:#7C3AED;">Capture Composite</h2>
+        <p>Build a Group with children (Text, Button, Image) inside Bubble, copy the Group, then click below to capture it as a reusable multi-element template.</p>
+        <p style="font-size:11px;color:#94a3b8;margin-top:4px">The compiler will auto-tokenize each child by type: Text[0]=Title, Text[1]=Body, Button=BTN_*. You can then customize all tokens from the component card.</p>
+        <div style="margin-top:10px;">
+          <input type="text" id="bf-composite-name" class="bf-search" placeholder="Template Name (e.g. Feature Card)" style="margin-bottom:8px">
+          <select id="bf-composite-cat" class="bf-search" style="margin-bottom:8px">
+            <option value="">-- Select Category --</option>
+            <option value="cards">Cards</option>
+            <option value="containers">Containers</option>
+            <option value="navigation">Navigation</option>
+            <option value="inputs">Forms / Inputs</option>
+            <option value="tables">Tables</option>
+            <option value="other">Other</option>
+          </select>
+          <textarea id="bf-composite-desc" class="bf-search" placeholder="Description (optional)" style="margin-bottom:8px;resize:vertical;min-height:40px"></textarea>
+          <button class="bf-btn-primary" type="button" data-action="capture-composite" style="width:100%;background:#7C3AED;color:#fff">🧩 Capture from Bubble Clipboard</button>
         </div>
       </div>
 
@@ -1385,15 +1547,15 @@
         <p>Copy any element in the Bubble Editor, fill in the details below, and click Import to instantly add it to your BubbleForge catalog.</p>
         <div style="margin-top:10px;">
           <input type="text" id="bf-import-name" class="bf-search" placeholder="Component Name (e.g. Clean Pricing Table)" style="margin-bottom:8px">
-          <input type="text" id="bf-import-cat" class="bf-search" list="bf-import-categories" placeholder="Category (Buttons, Text, Images, Cards, Containers)" style="margin-bottom:8px">
+          <input type="text" id="bf-import-cat" class="bf-search" list="bf-import-categories" placeholder="Category (buttons, text, images, cards, containers)" style="margin-bottom:8px">
           <datalist id="bf-import-categories">
-            <option value="Buttons"></option>
-            <option value="Text"></option>
-            <option value="Images"></option>
-            <option value="Cards"></option>
-            <option value="Containers"></option>
-            <option value="Navigation"></option>
-            <option value="Forms"></option>
+            <option value="buttons"></option>
+            <option value="text"></option>
+            <option value="images"></option>
+            <option value="cards"></option>
+            <option value="containers"></option>
+            <option value="navigation"></option>
+            <option value="inputs"></option>
           </datalist>
           <textarea id="bf-import-desc" class="bf-search" placeholder="Description (optional)" style="margin-bottom:8px;resize:vertical;min-height:40px"></textarea>
           <button class="bf-btn-primary" type="button" data-action="comp-import" style="width:100%;background:#FF9900;color:#000">⬇️ Import from Clipboard</button>
@@ -1402,10 +1564,10 @@
 
       <div class="bf-tool-card" style="margin-bottom:16px;">
         <h2>App Theme</h2>
-        <p style="margin-bottom:10px">Colors detected from the active Bubble app. Font: <strong>${escapeHtml(activeTheme.font)}</strong></p>
+        <p style="margin-bottom:10px">${themeImported ? "Imported app theme colors." : "Using BubbleForge default theme. Import the active Bubble app theme when you want components to inherit it."} Font: <strong>${escapeHtml(activeTheme.font)}</strong></p>
         ${swatchHtml}
         <div class="bf-btn-row" style="margin-top:12px">
-          <button class="bf-btn-primary" type="button" data-action="refresh-theme">Re-detect Theme</button>
+          <button class="bf-btn-primary" type="button" data-action="refresh-theme">Import App Theme</button>
         </div>
       </div>
       
@@ -1459,11 +1621,13 @@
           runElementDefinitionImport(action);
         }
         if (action.dataset.action === "refresh-theme") {
-          extractAppTheme();
+          const imported = extractAppTheme();
+          themeImported = imported || themeImported;
           // Reset all cached customizations so they pick up the new theme
           Object.keys(customizations).forEach(k => delete customizations[k]);
           refresh();
           refreshQuickBar();
+          showToast(imported ? "App theme imported." : "Could not detect Bubble app theme.");
         }
         if (action.dataset.action === "rec-start") {
           recorderLog = "Recording started...\n";
@@ -1499,12 +1663,28 @@
         
         // Component Importer
         if (action.dataset.action === "comp-import") { runComponentImport(action); }
+
+        // Composite Capture
+        if (action.dataset.action === "capture-composite") { runCaptureComposite(action); }
+
+        // Wizard actions
+        if (action.dataset.action === "wizard-save") { runWizardSave(action); }
       }
     });
 
     root.addEventListener("input", (e) => {
       const search = e.target.closest("#bf-search");
       if (search) { searchQuery = search.value; updateMainOnly(); return; }
+      
+      // Wizard template select
+      const templateSelect = e.target.closest("[data-action='wizard-select-template']");
+      if (templateSelect) {
+        wizardSelectedTemplateId = templateSelect.value;
+        wizardCustomizations = {}; // reset on change
+        updateMainOnly();
+        return;
+      }
+
       if (updateCustomizationValue(root, e.target)) return;
       // Styleset color pickers
       const ssColor = e.target.dataset.ssColor;

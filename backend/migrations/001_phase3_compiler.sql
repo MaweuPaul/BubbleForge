@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS component_templates (
   slug              TEXT NOT NULL UNIQUE,
   base_json         JSONB NOT NULL,
   property_schema   JSONB NOT NULL DEFAULT '{}',
+  rules_json        JSONB NOT NULL DEFAULT '{}',
   preview_html      TEXT,
   status            TEXT NOT NULL DEFAULT 'draft',
   created_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

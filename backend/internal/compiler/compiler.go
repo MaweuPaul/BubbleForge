@@ -7,8 +7,16 @@ import (
 	"time"
 )
 
+// tokenKey converts a property atom id (e.g. "bgcolor") into the template token
+// name (e.g. "BGCOLOR") used inside {{BGCOLOR}} placeholders in base_json.
+// This is the single canonical contract between atom IDs and template tokens.
+func tokenKey(k string) string {
+	return strings.ToUpper(k)
+}
+
 type ComponentTemplate struct {
-	BaseJSON map[string]any
+	BaseJSON  map[string]any
+	RulesJSON map[string]any
 }
 
 type CompileInput struct {
@@ -33,14 +41,18 @@ func Compile(input CompileInput) (CompileOutput, error) {
 		return CompileOutput{}, fmt.Errorf("failed to unmarshal cloned base json: %w", err)
 	}
 
+	// Some primitive templates are stored as a single Bubble element. Bubble's
+	// paste clipboard expects the outer copy envelope, so normalize here.
+	cloned = EnsureCopyEnvelope(cloned)
+
 	// 1. Build token map from PropertyValues + BrandTokens
 	tokenMap := make(map[string]any)
 	for k, v := range input.BrandTokens {
 		tokenMap[k] = v
 	}
 	for k, v := range input.PropertyValues {
-		// Pass exact values to preserve type
-		tokenMap[strings.ToUpper(k)] = v
+		// tokenKey() is the canonical contract: atom id → template token
+		tokenMap[tokenKey(k)] = v
 	}
 
 	// 2. Replace Tokens
@@ -57,6 +69,10 @@ func Compile(input CompileInput) (CompileOutput, error) {
 
 	// 5. Strip unsafe fields
 	cloned = StripUnsafeFields(cloned)
+
+	// 6. Apply template rules, then keep button fixed-height as a safety net.
+	cloned = ApplyTemplateRules(cloned, input.Template.RulesJSON)
+	cloned = EnsureButtonFixedHeight(cloned)
 
 	return CompileOutput{
 		BubbleJSON: cloned,

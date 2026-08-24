@@ -7,6 +7,7 @@
 bin/
 coverage.out
 *.test
+backend/bubbleforge-api
 backend/seed-*
 
 # Repo-local Go caches used in this workspace

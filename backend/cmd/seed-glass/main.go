@@ -82,7 +82,7 @@ func main() {
 		propsJSON, _ := json.Marshal(v.props)
 		_, err := pool.Exec(ctx, `
 			INSERT INTO components (id, category, name, description, access, template_id, property_values)
-			VALUES ($1, 'Button', $2, $3, 'Free', $4, $5)
+			VALUES ($1, 'Buttons', $2, $3, 'Free', $4, $5)
 			ON CONFLICT (id) DO UPDATE SET 
 				name = EXCLUDED.name,
 				description = EXCLUDED.description,

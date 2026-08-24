@@ -151,6 +151,4 @@ Load the extension:
 
 ## License
 
-No license is provided.
-
-All rights reserved. This is a private commercial and portfolio project. No permission is granted to copy, modify, redistribute, sublicense, or use the source code without explicit written permission from the owner.
+All rights reserved — see [LICENSE](LICENSE). This repository is public for portfolio and demonstration purposes only. No permission is granted to copy, modify, redistribute, sublicense, or use the source code without explicit written permission from the owner.

@@ -41,6 +41,15 @@ func main() {
 		"migrations/002_drop_bubble_json.sql",
 		"migrations/003_property_registry.sql",
 		"migrations/004_property_descriptions.sql",
+		"migrations/005_categories.sql",
+		"migrations/006_atoms.sql",
+		"migrations/007_consolidate_presets.sql",
+		"migrations/008_text_atoms.sql",
+		"migrations/009_link_atoms.sql",
+		"migrations/010_image_atoms.sql",
+		"migrations/011_shape_atoms.sql",
+		"migrations/012_group_atoms.sql",
+		"migrations/013_template_rules.sql",
 	}
 
 	for _, path := range migrations {

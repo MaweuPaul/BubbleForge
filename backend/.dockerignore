@@ -1,4 +1,6 @@
+bubbleforge-api
 seed-*
+*-bin
 .cache/
 .gocache/
 bin/
